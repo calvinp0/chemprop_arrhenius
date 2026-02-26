@@ -16,14 +16,14 @@ from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponen
 from arrhenius.modeling.nn.transformers import UnscaleColumnTransform
 from arrhenius.splitters.k_stone import ks_make_split_indices
 from arrhenius.splitters.random import random_grouped_split_indices
-from run_hpo.data import (
+from arrhenius.training.hpo.data import (
     compute_arrhenius_scalers_from_train,
     fit_global_normalizers,
     make_loaders,
     prepare_data,
 )
-from run_hpo.model_build import model_factory_from_cfg
-from run_hpo.feature_modes import canonicalize_extra_mode, mode_settings
+from arrhenius.training.hpo.model_build import model_factory_from_cfg
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
 
 
 def build_parser() -> argparse.ArgumentParser:

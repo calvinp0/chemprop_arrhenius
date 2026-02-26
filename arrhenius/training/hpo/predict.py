@@ -85,7 +85,7 @@ def _load_best_cfg(metadata: Dict[str, Any], summary_json: Optional[str]) -> Dic
             return cfg
     raise ValueError(
         "Could not find best_cfg in metadata. Re-export with updated ensemble_eval.py "
-        "or provide --summary-json from run_hpo final summary."
+        "or provide --summary-json from arrhenius.training.hpo final summary."
     )
 
 
@@ -144,8 +144,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
     from lightning import pytorch as pl
     from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
-    from run_hpo.data import make_loaders, prepare_data
-    from run_hpo.feature_modes import canonicalize_extra_mode, mode_settings
+    from arrhenius.training.hpo.data import make_loaders, prepare_data
+    from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
 
     bundle_dir = Path(args.bundle_dir).resolve()
     output_csv = Path(args.output_csv).resolve()

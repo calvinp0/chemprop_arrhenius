@@ -2,7 +2,7 @@
 from chemprop import data, featurizers, nn
 from chemprop.CUSTOM.featuriser.featurise import MOL_TYPES
 from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
-from run_hpo.feature_modes import canonicalize_extra_mode, mode_settings
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
 
 def _build_message_passing(cfg, featurizer):
     depth = int(cfg.get("mp_depth", 4))

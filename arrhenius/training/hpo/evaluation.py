@@ -21,15 +21,15 @@ from arrhenius.data.collate import build_loader_mc
 from lightning import pytorch as pl
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 
-from run_hpo.data import (
+from arrhenius.training.hpo.data import (
     make_loaders,
     compute_arrhenius_scalers_from_train,
     CP_NUM_WORKERS,
     torch_generator,
 )
-from run_hpo.model_build import model_factory_from_cfg
-from run_hpo.splits import splits_signature
-from run_hpo.loader_cache import LoaderCache
+from arrhenius.training.hpo.model_build import model_factory_from_cfg
+from arrhenius.training.hpo.splits import splits_signature
+from arrhenius.training.hpo.loader_cache import LoaderCache
 
 
 class _PseudoTrial:

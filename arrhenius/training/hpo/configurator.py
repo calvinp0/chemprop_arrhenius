@@ -3,11 +3,11 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any, Dict, Tuple
 
-from run_hpo.defaults import config_defaults
-from run_hpo.modes import resolve_modes
-from run_hpo.space import load_search_space
-from run_hpo.temps import build_temps
-from run_hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
+from arrhenius.training.hpo.defaults import config_defaults
+from arrhenius.training.hpo.modes import resolve_modes
+from arrhenius.training.hpo.space import load_search_space
+from arrhenius.training.hpo.temps import build_temps
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 
 
 def compose_base_config(args, base_cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any] | None]:

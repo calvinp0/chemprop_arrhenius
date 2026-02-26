@@ -1,6 +1,6 @@
 # run_hpo/modes.py
 from copy import deepcopy
-from run_hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 
 def resolve_modes(base_cfg, args, yaml_space):
     """

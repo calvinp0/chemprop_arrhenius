@@ -19,7 +19,7 @@ from chemprop.featurizers import (
     MorganBinaryFeaturizer, MorganCountFeaturizer, V1RDKit2DNormalizedFeaturizer
 )
 from sklearn.preprocessing import StandardScaler, PowerTransformer
-from run_hpo.feature_modes import (
+from arrhenius.training.hpo.feature_modes import (
     ANGLE_COL,
     DIHEDRAL_COL,
     RADIUS_COL,
@@ -573,7 +573,7 @@ def load_saved_split_indices(
     """
     Convenience helper to retrieve stored split indices from the metrics DB.
     """
-    from run_hpo.database_configs import fetch_split_indices
+    from arrhenius.training.hpo.database_configs import fetch_split_indices
 
     return fetch_split_indices(db_path, study_name, trial_id, fold_id)
 
@@ -598,7 +598,7 @@ def loaders_from_saved_split(
         splits = loaders_from_saved_split(bundle, cfg, "final_metrics.sqlite",
                                           "arrhenius_final", trial_id, fold_id=0)
     """
-    from run_hpo.database_configs import fetch_split_indices
+    from arrhenius.training.hpo.database_configs import fetch_split_indices
 
     split_map = fetch_split_indices(db_path, study_name, trial_id, fold_id)
     if not split_map:

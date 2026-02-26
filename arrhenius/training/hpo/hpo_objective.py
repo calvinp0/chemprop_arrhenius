@@ -5,10 +5,10 @@ import json
 import optuna
 from optuna.trial import Trial
 
-from run_hpo.configurator import compose_base_config, finalize_cfg
-from run_hpo.space import load_search_space
-from run_hpo.apply_yaml import apply_yaml_space
-from run_hpo.temps import build_temps
+from arrhenius.training.hpo.configurator import compose_base_config, finalize_cfg
+from arrhenius.training.hpo.space import load_search_space
+from arrhenius.training.hpo.apply_yaml import apply_yaml_space
+from arrhenius.training.hpo.temps import build_temps
 
 def _config_signature(cfg: Dict[str, Any], splits_sig: str | None = None) -> str:
     # include split signature to avoid accidentally reusing scores across different folds

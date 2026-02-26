@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 from rdkit import Chem
 
-from run_hpo.data_spec import DataSpecError, load_data_spec
+from arrhenius.training.hpo.data_spec import DataSpecError, load_data_spec
 
 
 def _append_missing(errors: List[str], columns: List[str], required: List[str], label: str) -> None:

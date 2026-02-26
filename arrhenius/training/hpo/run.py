@@ -9,25 +9,25 @@ import random
 import torch
 from sklearn.model_selection import GroupKFold
 
-from run_hpo.cli import build_parser
+from arrhenius.training.hpo.cli import build_parser
 from pathlib import Path
 
-from run_hpo.configurator import finalize_cfg
-from run_hpo.data import prepare_data
-from run_hpo.defaults import config_defaults
-from run_hpo.splits import build_outer_splits, build_locked_holdout_split, splits_signature
-from run_hpo.hpo_objective import objective_factory
-from run_hpo.evaluation import (
+from arrhenius.training.hpo.configurator import finalize_cfg
+from arrhenius.training.hpo.data import prepare_data
+from arrhenius.training.hpo.defaults import config_defaults
+from arrhenius.training.hpo.splits import build_outer_splits, build_locked_holdout_split, splits_signature
+from arrhenius.training.hpo.hpo_objective import objective_factory
+from arrhenius.training.hpo.evaluation import (
     evaluate_trial_on_fold,
     eval_final_cfg_on_kfold,
     train_final_cfg_on_holdout,
     export_final_split_details,
 )
-from run_hpo.database_configs import TrialLogger
-from run_hpo.loader_cache import LoaderCache
-from run_hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, canonicalize_rad_source, mode_settings
-from run_hpo.space import load_search_space
-from run_hpo.validate_data import main as validate_data_main
+from arrhenius.training.hpo.database_configs import TrialLogger
+from arrhenius.training.hpo.loader_cache import LoaderCache
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, canonicalize_rad_source, mode_settings
+from arrhenius.training.hpo.space import load_search_space
+from arrhenius.training.hpo.validate_data import main as validate_data_main
 
 
 def set_all_seeds(seed: int, deterministic: bool = True):

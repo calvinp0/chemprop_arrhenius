@@ -5,8 +5,8 @@ from typing import Any, Dict
 
 import yaml
 
-from run_hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, mode_settings
-from run_hpo.feature_modes import canonicalize_rad_source
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, mode_settings
+from arrhenius.training.hpo.feature_modes import canonicalize_rad_source
 
 
 class DataSpecError(ValueError):

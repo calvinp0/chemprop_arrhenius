@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Dict, Any, Sequence, Optional, Tuple
 
-from run_hpo.data import make_loaders, fit_global_normalizers
+from arrhenius.training.hpo.data import make_loaders, fit_global_normalizers
 
 
 def _scaler_key(train_idx: Sequence[int], cfg: Dict[str, Any]) -> Tuple:

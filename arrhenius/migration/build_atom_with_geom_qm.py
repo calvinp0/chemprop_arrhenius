@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 from rdkit import Chem
 
-from gaussian_qm import parse_gaussian_qm
+from arrhenius.migration.gaussian_qm import parse_gaussian_qm
 
 
 def _load_create_rad_module(create_rad_py: Path):

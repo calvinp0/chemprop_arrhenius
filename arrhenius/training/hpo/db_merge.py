@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from run_hpo.database_configs import SCHEMA  # reuse canonical schema
+from arrhenius.training.hpo.database_configs import SCHEMA  # reuse canonical schema
 
 DEFAULT_TABLES = (
     "trials",
