@@ -3,17 +3,17 @@
 # run_hpo/data.py
 from dataclasses import dataclass
 from typing import List, Tuple, Optional, Dict, Any, Sequence
-import os, numpy as np, pandas as pd
+import os
+import numpy as np
+import pandas as pd
 import ast
 from rdkit import Chem
 from rdkit.Chem import inchi
 import torch
 
-from chemprop import data as cpdata, featurizers
+from chemprop import data as cpdata
 from arrhenius.data.dataset import ArrMulticomponentDataset, ArrMoleculeDataset
 from arrhenius.data.collate import build_loader_mc
-from arrhenius.modeling.nn.transformers import UnscaleColumnTransform
-from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
 from chemprop.CUSTOM.featuriser.featurise import Featuriser, MOL_TYPES
 from chemprop.featurizers import (
     MorganBinaryFeaturizer,
@@ -22,7 +22,6 @@ from chemprop.featurizers import (
 )
 from sklearn.preprocessing import StandardScaler, PowerTransformer
 from arrhenius.training.hpo.feature_modes import (
-    ANGLE_COL,
     DIHEDRAL_COL,
     RADIUS_COL,
     atom_extra_dim,
@@ -203,8 +202,6 @@ def attach_feats_to_dps_pairwise(
     for rxn in common_rxns:
         i0, i1 = idx_by_rxn_r1h[rxn], idx_by_rxn_r2h[rxn]
         dp0, dp1 = feat_data[0][i0], feat_data[1][i1]
-        mol0 = dp0.mol if not isinstance(dp0.mol, tuple) else dp0.mol[0]
-        mol1 = dp1.mol if not isinstance(dp1.mol, tuple) else dp1.mol[0]
 
         if use_atom_extras:
             sub0 = atom_extra_feats[

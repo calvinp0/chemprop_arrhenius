@@ -821,10 +821,10 @@ def train_final_cfg_on_holdout(
                     test=np.array(test_idx, dtype=int),
                 )
 
-            run_dir = os.path.join("logs/hpo", f"{tag}-holdout-r{rep_id+1}")
+            run_dir = os.path.join("logs/hpo", f"{tag}-holdout-r{rep_id + 1}")
             checkpoint_dir = None
             if save_checkpoints and checkpoint_root is not None:
-                checkpoint_dir = os.path.join(checkpoint_root, f"rep{rep_id+1}")
+                checkpoint_dir = os.path.join(checkpoint_root, f"rep{rep_id + 1}")
 
             result = _train_one(
                 train_abs_idx,
@@ -842,7 +842,7 @@ def train_final_cfg_on_holdout(
                 test_idx=test_idx,
                 save_checkpoints=save_checkpoints,
                 checkpoint_dir=checkpoint_dir,
-                checkpoint_prefix=f"{tag}-rep{rep_id+1}",
+                checkpoint_prefix=f"{tag}-rep{rep_id + 1}",
                 loader_cache=loader_cache,
             )
 
@@ -1034,7 +1034,6 @@ def export_final_split_details(
                     continue
                 preds = prediction_map.get(split_name, {})
                 y_pred_raw = preds.get("y_pred_raw")
-                y_true_raw = preds.get("y_true_raw")
                 lnk_pred = preds.get("lnk_pred")
                 lnk_true = preds.get("lnk_true")
                 temps = preds.get("temps")

@@ -1,10 +1,8 @@
 # run_hpo/temps.py
 import numpy as np
-from copy import deepcopy
 
 
 def build_temps(cfg, args, yaml_space=None, default=(300.0, 3100.0, 100.0), include_max=False):
-    c = deepcopy(cfg)
     y = yaml_space or {}
     tmin = float(getattr(args, "temp_min", y.get("temp_min", default[0])))
     tmax = float(getattr(args, "temp_max", y.get("temp_max", default[1])))

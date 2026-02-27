@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List, Tuple, Sequence, Optional, Union, Literal, Hashable
 import numpy as np
 from sklearn.metrics import pairwise_distances
@@ -22,9 +23,6 @@ except Exception:
     Molecule = None
     LoadingError = None
 ArrayLikeMol = Union[str, "Chem.Mol"]
-
-
-from collections import defaultdict
 
 
 def _to_mol(x: ArrayLikeMol) -> Chem.Mol | None:

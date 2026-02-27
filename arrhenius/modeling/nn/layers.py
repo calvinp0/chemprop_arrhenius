@@ -14,8 +14,8 @@ class ArrheniusLayer(nn.Module):
         temps: list[float],
         *,
         use_kJ: bool = True,
-        lnk_mean: torch.Tensor | None = None,  #  (N_T,)  from StandardScaler
-        lnk_scale: torch.Tensor | None = None,  #  (N_T,)
+        lnk_mean: torch.Tensor | None = None,  # (N_T,) from StandardScaler
+        lnk_scale: torch.Tensor | None = None,  # (N_T,)
     ):
         super().__init__()
 

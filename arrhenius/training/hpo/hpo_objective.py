@@ -1,5 +1,5 @@
 # run_hpo
-from typing import Any, Callable, Dict, Optional, Sequence
+from typing import Any, Dict
 from hashlib import sha1
 import json
 import optuna
@@ -8,7 +8,6 @@ from optuna.trial import Trial
 from arrhenius.training.hpo.configurator import compose_base_config, finalize_cfg
 from arrhenius.training.hpo.space import load_search_space
 from arrhenius.training.hpo.apply_yaml import apply_yaml_space
-from arrhenius.training.hpo.temps import build_temps
 
 
 def _config_signature(cfg: Dict[str, Any], splits_sig: str | None = None) -> str:

@@ -44,7 +44,7 @@ from arrhenius.modeling.metrics.metrics import MetricRegistry, Tgt
 from arrhenius.modeling.nn.layers import ArrheniusLayer
 from arrhenius.modeling.nn.predictor import ArrheniusHeadPredictor
 
-from arrhenius.modeling.module.model_core import PredictBatchOutput, ArrheniusModelCoreMixin
+from arrhenius.modeling.module.model_core import ArrheniusModelCoreMixin
 from arrhenius.modeling.module.losses import ArrheniusLossMixin
 from arrhenius.modeling.module.metrics_hooks import ArrheniusMetricsHooksMixin
 from arrhenius.modeling.module.checkpoint_io import ArrheniusCheckpointIOMixin

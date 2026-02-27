@@ -7,16 +7,7 @@ from chemprop.utils import Factory
 from chemprop.nn.predictors import _FFNPredictorBase, PredictorRegistry
 from chemprop.nn.metrics import (
     MSE,
-    SID,
-    BCELoss,
-    BinaryAUROC,
     ChempropMetric,
-    CrossEntropyLoss,
-    DirichletLoss,
-    EvidentialLoss,
-    MulticlassMCCMetric,
-    MVELoss,
-    QuantileLoss,
 )
 
 _ACTS = {

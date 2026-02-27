@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from enum import Enum
-from torchmetrics import MeanSquaredError, MeanAbsoluteError, R2Score
 
 
 class Dir(str, Enum):

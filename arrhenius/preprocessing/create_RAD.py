@@ -1,14 +1,11 @@
 import os
 from pathlib import Path
-from cProfile import label
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import rdmolops
-from rdkit.Chem import AllChem
 import pandas as pd
 import ast
 import argparse
-from pathlib import Path
 
 
 def get_distance(coords, i, j):

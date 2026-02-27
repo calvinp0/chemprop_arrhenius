@@ -111,7 +111,6 @@ def _resolve_precision(cfg: Dict[str, Any], accelerator: str | int) -> str | int
     precision_cfg = cfg.get("precision")
     if precision_cfg:
         return precision_cfg
-    has_cuda = pl.utilities.device_parser.num_cuda_devices() > 0
     if accelerator == "cpu" or (accelerator == "auto" and not torch.cuda.is_available()):
         return "32-true"
     return "16-mixed"
