@@ -1,13 +1,14 @@
 # run_hpo
-from typing import Any, Dict
 from hashlib import sha1
 import json
+from typing import Any, Dict
+
 import optuna
 from optuna.trial import Trial
 
+from arrhenius.training.hpo.apply_yaml import apply_yaml_space
 from arrhenius.training.hpo.configurator import compose_base_config, finalize_cfg
 from arrhenius.training.hpo.space import load_search_space
-from arrhenius.training.hpo.apply_yaml import apply_yaml_space
 
 
 def _config_signature(cfg: Dict[str, Any], splits_sig: str | None = None) -> str:

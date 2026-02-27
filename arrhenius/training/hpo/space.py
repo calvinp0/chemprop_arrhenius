@@ -1,7 +1,8 @@
 # run_hpo/space.py
-import yaml
 from typing import Any, Dict
+
 from optuna.trial import Trial
+import yaml
 
 
 def load_search_space(path: str) -> Dict[str, Any]:

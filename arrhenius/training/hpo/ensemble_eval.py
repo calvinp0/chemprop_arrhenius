@@ -1,16 +1,16 @@
 import argparse
 import json
-import shutil
 from pathlib import Path
+import shutil
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import joblib
+from lightning import pytorch as pl
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from lightning import pytorch as pl
-from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 
 from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
 from arrhenius.modeling.nn.transformers import UnscaleColumnTransform
@@ -22,8 +22,8 @@ from arrhenius.training.hpo.data import (
     make_loaders,
     prepare_data,
 )
-from arrhenius.training.hpo.model_build import model_factory_from_cfg
 from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
+from arrhenius.training.hpo.model_build import model_factory_from_cfg
 
 
 def build_parser() -> argparse.ArgumentParser:

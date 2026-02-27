@@ -1,11 +1,14 @@
 from __future__ import annotations
+
 from typing import Optional
+
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
+
+from chemprop.nn.metrics import MSE, ChempropMetric
+from chemprop.nn.predictors import PredictorRegistry, _FFNPredictorBase
 from chemprop.nn.transforms import UnscaleTransform
 from chemprop.utils import Factory
-from chemprop.nn.predictors import _FFNPredictorBase, PredictorRegistry
-from chemprop.nn.metrics import MSE, ChempropMetric
 
 _ACTS = {
     "relu": nn.ReLU,

@@ -5,8 +5,8 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
-from chemprop.data import MulticomponentTrainingBatch
 from arrhenius.modeling.module.model_core import PredictBatchOutput
+from chemprop.data import MulticomponentTrainingBatch
 
 
 class ArrheniusMetricsHooksMixin:

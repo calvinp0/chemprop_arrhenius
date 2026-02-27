@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
+
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import rdMolTransforms
-from chemprop.data.molgraph import MolGraph
 
+from chemprop.data.molgraph import MolGraph
 from chemprop.featurizers.atom import MultiHotAtomFeaturizer
 
 

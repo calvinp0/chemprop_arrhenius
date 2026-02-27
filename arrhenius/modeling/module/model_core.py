@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 import logging
+from typing import Any
 
 import torch
 from torch import Tensor

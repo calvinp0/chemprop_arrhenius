@@ -159,6 +159,7 @@ def _extract_raw(outputs: List[Any]) -> np.ndarray:
 def main(argv: Optional[List[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
     from lightning import pytorch as pl
+
     from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
     from arrhenius.training.hpo.data import make_loaders, prepare_data
     from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings

@@ -1,13 +1,14 @@
 # Shared config assembly helpers for HPO and replay.
 from __future__ import annotations
+
 from copy import deepcopy
 from typing import Any, Dict, Tuple
 
 from arrhenius.training.hpo.defaults import config_defaults
+from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 from arrhenius.training.hpo.modes import resolve_modes
 from arrhenius.training.hpo.space import load_search_space
 from arrhenius.training.hpo.temps import build_temps
-from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 
 
 def compose_base_config(

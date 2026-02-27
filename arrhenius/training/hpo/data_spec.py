@@ -8,9 +8,9 @@ import yaml
 from arrhenius.training.hpo.feature_modes import (
     canonicalize_extra_mode,
     canonicalize_global_mode,
+    canonicalize_rad_source,
     mode_settings,
 )
-from arrhenius.training.hpo.feature_modes import canonicalize_rad_source
 
 
 class DataSpecError(ValueError):

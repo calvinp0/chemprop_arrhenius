@@ -1,11 +1,12 @@
 # chemprop/nn/transforms.py  (or wherever you keep the others)
 # -------------------------------------------------------------
 from typing import Sequence
+
 import numpy as np
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import PowerTransformer, StandardScaler
 import torch
 from torch import Tensor, nn
-from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, PowerTransformer
 
 
 class UnscaleColumnTransform(nn.Module):

@@ -1,12 +1,11 @@
 from collections import defaultdict
-from typing import List, Tuple, Sequence, Optional, Union, Literal, Hashable
-import numpy as np
-from sklearn.metrics import pairwise_distances
+from typing import Hashable, List, Literal, Optional, Sequence, Tuple, Union
 import warnings
 
-
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import inchi
+from sklearn.metrics import pairwise_distances
 
 # ---- AIMSim imports behind a safe shim ----
 Molecule = None

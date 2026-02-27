@@ -1,7 +1,7 @@
-from chemprop import nn
-from chemprop.CUSTOM.featuriser.featurise import MOL_TYPES
 from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
 from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
+from chemprop import nn
+from chemprop.CUSTOM.featuriser.featurise import MOL_TYPES
 
 
 def _build_message_passing(cfg, featurizer):

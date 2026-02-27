@@ -1,7 +1,7 @@
 import argparse
 import os
-import sqlite3
 from pathlib import Path
+import sqlite3
 from typing import Iterable, Sequence
 
 from arrhenius.training.hpo.database_configs import SCHEMA  # reuse canonical schema

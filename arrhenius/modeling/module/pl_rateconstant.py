@@ -1,23 +1,19 @@
-from typing import Iterable, NamedTuple
 import logging
+from typing import Iterable, NamedTuple
 
-
+from lightning import pytorch as pl
 import torch
 from torch import Tensor, nn, optim
 import torch.nn.functional as F
+from torchmetrics import MeanAbsoluteError, MeanSquaredError, MetricCollection, R2Score
 
-from lightning import pytorch as pl
-
-
-from chemprop.data import BatchMolGraph, MulticomponentTrainingBatch
-from chemprop.nn.message_passing import MulticomponentMessagePassing
-from chemprop.nn.agg import Aggregation
-from arrhenius.modeling.nn.predictor import ArrheniusHeadPredictor
 from arrhenius.modeling.nn.layers import ArrheniusLayer
-from chemprop.schedulers import build_NoamLike_LRSched
+from arrhenius.modeling.nn.predictor import ArrheniusHeadPredictor
+from chemprop.data import BatchMolGraph, MulticomponentTrainingBatch
+from chemprop.nn.agg import Aggregation
+from chemprop.nn.message_passing import MulticomponentMessagePassing
 from chemprop.nn.transforms import ScaleTransform
-
-from torchmetrics import MetricCollection, MeanSquaredError, MeanAbsoluteError, R2Score
+from chemprop.schedulers import build_NoamLike_LRSched
 
 logger = logging.getLogger(__name__)
 

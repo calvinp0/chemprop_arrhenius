@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
+
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 from sklearn.base import TransformerMixin
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler
+
 from chemprop import data as cpdata
 from chemprop.data.datasets import Datum
 from chemprop.featurizers.molgraph.cache import MolGraphCache, MolGraphCacheOnTheFly

@@ -1,13 +1,13 @@
 # run_hpo/database_configs.py
 
-from typing import Optional
+from contextlib import contextmanager
 import hashlib
 import json
 import math
 import sqlite3
 import time
+from typing import Optional
 import zlib
-from contextlib import contextmanager
 
 
 def _json(x):

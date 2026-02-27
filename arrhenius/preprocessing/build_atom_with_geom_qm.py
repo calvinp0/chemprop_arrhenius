@@ -6,8 +6,8 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from rdkit import Chem
 
 from arrhenius.preprocessing.gaussian_qm import parse_gaussian_qm

@@ -32,22 +32,21 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from lightning import pytorch as pl
 import torch
 from torch import nn
-from lightning import pytorch as pl
-from torchmetrics import MeanSquaredError, MeanAbsoluteError, R2Score
+from torchmetrics import MeanAbsoluteError, MeanSquaredError, R2Score
 
+from arrhenius.modeling.metrics.metrics import MetricRegistry, Tgt
+from arrhenius.modeling.module.checkpoint_io import ArrheniusCheckpointIOMixin
+from arrhenius.modeling.module.losses import ArrheniusLossMixin
+from arrhenius.modeling.module.metrics_hooks import ArrheniusMetricsHooksMixin
+from arrhenius.modeling.module.model_core import ArrheniusModelCoreMixin
+from arrhenius.modeling.nn.layers import ArrheniusLayer
+from arrhenius.modeling.nn.predictor import ArrheniusHeadPredictor
 from chemprop.nn.agg import Aggregation
 from chemprop.nn.message_passing import MulticomponentMessagePassing
 from chemprop.nn.transforms import ScaleTransform
-from arrhenius.modeling.metrics.metrics import MetricRegistry, Tgt
-from arrhenius.modeling.nn.layers import ArrheniusLayer
-from arrhenius.modeling.nn.predictor import ArrheniusHeadPredictor
-
-from arrhenius.modeling.module.model_core import ArrheniusModelCoreMixin
-from arrhenius.modeling.module.losses import ArrheniusLossMixin
-from arrhenius.modeling.module.metrics_hooks import ArrheniusMetricsHooksMixin
-from arrhenius.modeling.module.checkpoint_io import ArrheniusCheckpointIOMixin
 
 logger = logging.getLogger(__name__)
 

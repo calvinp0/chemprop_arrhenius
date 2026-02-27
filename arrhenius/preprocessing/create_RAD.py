@@ -1,11 +1,12 @@
+import argparse
+import ast
 import os
 from pathlib import Path
+
 import numpy as np
+import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import rdmolops
-import pandas as pd
-import ast
-import argparse
 
 
 def get_distance(coords, i, j):
