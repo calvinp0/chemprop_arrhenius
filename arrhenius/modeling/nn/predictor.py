@@ -5,10 +5,7 @@ from torch import nn, Tensor
 from chemprop.nn.transforms import UnscaleTransform
 from chemprop.utils import Factory
 from chemprop.nn.predictors import _FFNPredictorBase, PredictorRegistry
-from chemprop.nn.metrics import (
-    MSE,
-    ChempropMetric,
-)
+from chemprop.nn.metrics import MSE, ChempropMetric
 
 _ACTS = {
     "relu": nn.ReLU,
