@@ -11,9 +11,15 @@ import pandas as pd
 
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        description="Run inference from an exported run_hpo model bundle."
+        description="Run inference from an exported training/HPO model directory."
     )
-    p.add_argument("--bundle-dir", required=True, help="Directory containing ensemble_metadata.json and exported members.")
+    p.add_argument(
+        "--model-dir",
+        "--bundle-dir",
+        dest="model_dir",
+        required=True,
+        help="Directory containing ensemble_metadata.json and exported members.",
+    )
     p.add_argument("--sdf-path", required=True, help="SDF used for featurisation.")
     p.add_argument("--input-csv", required=True, help="Input CSV of reactions to score.")
     p.add_argument("--rad-dir", help="RAD feature directory (required when extra_mode uses atom extras).")
@@ -147,7 +153,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     from arrhenius.training.hpo.data import make_loaders, prepare_data
     from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
 
-    bundle_dir = Path(args.bundle_dir).resolve()
+    bundle_dir = Path(args.model_dir).resolve()
     output_csv = Path(args.output_csv).resolve()
     output_csv.parent.mkdir(parents=True, exist_ok=True)
 

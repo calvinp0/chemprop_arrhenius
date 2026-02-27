@@ -1,12 +1,12 @@
 # QM + RAD Feature Build Spec
 
-This pipeline is intentionally separate from `run_hpo`.
+This pipeline is intentionally separate from the training/HPO pipeline in `arrhenius/training/hpo/`.
 
 ## Goal
 Given reaction SDFs and Gaussian frequency logs, generate:
 
 - `atom_with_geom_feats_path.csv`
-- `atom_with_geom_feats_default.csv`
+- `atom_with_geom_feats_rad.csv`
 
 These files are the direct inputs expected by `run_hpo --rad-dir`.
 
@@ -32,9 +32,9 @@ CSV with columns:
 
 Inside `--output-dir`:
 - `geom_features_path.csv`
-- `geom_features_default.csv`
+- `geom_features_rad.csv`
 - `atom_with_geom_feats_path.csv`
-- `atom_with_geom_feats_default.csv`
+- `atom_with_geom_feats_rad.csv`
 - `qm_merge_report.json`
 
 ## Merge keys and schema
@@ -69,4 +69,4 @@ RAD columns come from `create_RAD.py`.
 ## Notes
 
 - This pipeline does not train models.
-- `run_hpo` remains unchanged and only consumes prepared CSVs.
+- The training/HPO code in `arrhenius/training/hpo/` remains unchanged and only consumes prepared CSVs.

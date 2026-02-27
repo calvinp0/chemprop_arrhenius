@@ -1,4 +1,4 @@
-# run_hpo Workflow Guide
+# Training/HPO Workflow Guide
 
 This guide describes the recommended end-to-end workflow for:
 - HPO
@@ -106,7 +106,7 @@ Exported bundle contains:
 
 ```bash
 conda run -n torch_rocm python arrhenius/training/hpo/predict.py \
-  --bundle-dir artifacts/model_v1 \
+  --model-dir artifacts/model_v1 \
   --sdf-path <SDF_PATH> \
   --input-csv <INPUT_CSV> \
   --rad-dir <RAD_DIR_IF_NEEDED> \

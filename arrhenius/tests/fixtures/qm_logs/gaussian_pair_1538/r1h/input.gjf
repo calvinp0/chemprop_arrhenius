@@ -1,0 +1,16 @@
+%chk=check.chk
+#P wb97xd/def2TZVP Freq=(IntModes,ModRedundant) Pop=(NBORead) Nosym IOp(7/33=1) Int=UltraFine Integral=(Acc2E=12) SCF=(XQC,NoVarAcc)
+
+rmg_rxn_1538_r1h
+
+0 1
+C -0.454700 -0.009700 -0.007000
+N 0.869500 -0.198700 -0.621800
+O 1.032200 -1.280900 -1.096900
+H -0.282000 0.268700 1.034700
+H -1.071600 -0.905100 -0.091600
+H -0.913000 0.848700 -0.502600
+
+D 4 1 2 3 F
+
+$NBO BNDIDX $END

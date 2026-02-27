@@ -177,3 +177,7 @@ chemprop/_version.py
 config.toml
 
 !tests/data/*
+
+### Tests
+!arrhenius/tests/
+!arrhenius/tests/**/*.log
