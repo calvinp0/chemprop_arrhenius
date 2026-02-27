@@ -1,8 +1,8 @@
-
 from chemprop import data, featurizers, nn
 from chemprop.CUSTOM.featuriser.featurise import MOL_TYPES
 from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
 from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, mode_settings
+
 
 def _build_message_passing(cfg, featurizer):
     depth = int(cfg.get("mp_depth", 4))
@@ -11,8 +11,10 @@ def _build_message_passing(cfg, featurizer):
     shared = bool(cfg.get("mp_shared", True))
     d_v = featurizer.atom_fdim
     d_e = featurizer.bond_fdim
-    has_vd = bool(mode_settings(canonicalize_extra_mode(cfg.get("extra_mode", "baseline")))["use_extras"])
-    d_vd   = 1 if has_vd else 0
+    has_vd = bool(
+        mode_settings(canonicalize_extra_mode(cfg.get("extra_mode", "baseline")))["use_extras"]
+    )
+    d_vd = 1 if has_vd else 0
     blocks = [
         nn.BondMessagePassing(depth=depth, dropout=dropout, d_v=d_v, d_e=d_e, d_h=d_h, d_vd=d_vd)
         for _ in range(len(MOL_TYPES))
@@ -21,6 +23,7 @@ def _build_message_passing(cfg, featurizer):
         blocks=blocks, n_components=len(MOL_TYPES), shared=shared
     )
 
+
 def _agg_from_name(name: str):
     name = name.lower()
     if name == "mean":
@@ -28,6 +31,7 @@ def _agg_from_name(name: str):
     if name == "sum":
         return nn.SumAggregation()
     raise ValueError(f"Unknown agg {name}")
+
 
 def model_factory_from_cfg(
     cfg,

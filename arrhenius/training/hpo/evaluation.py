@@ -163,6 +163,7 @@ def _build_eval_loader(dataset, batch_size: int, seed: int):
         pin_memory=pin,
     )
 
+
 def _log_predictions_from_checkpoints(
     checkpoint_records: Optional[List[Dict[str, Any]]],
     bundle,
@@ -227,10 +228,10 @@ def evaluate_trial_on_fold(
     fold_indices: Sequence[int],
     cfg: Dict[str, Any],
     pair_group_keys: Sequence[Hashable],
-    donors,                           # Sequence[Chem.Mol]
-    acceptors,                        # Sequence[Chem.Mol]
-    attached_pair_dps,                # list[ list[chemprop.data.MoleculeDatapoint] ]  (len=2 for (donor, acceptor))
-    featurizer,                       # chemprop.featurizers.SimpleMoleculeMolGraphFeaturizer
+    donors,  # Sequence[Chem.Mol]
+    acceptors,  # Sequence[Chem.Mol]
+    attached_pair_dps,  # list[ list[chemprop.data.MoleculeDatapoint] ]  (len=2 for (donor, acceptor))
+    featurizer,  # chemprop.featurizers.SimpleMoleculeMolGraphFeaturizer
     x_d_dim: int,
     trial_tag: str,
     log_root: str = "logs/hpo",
@@ -262,10 +263,10 @@ def evaluate_trial_on_fold(
         trial_tag: Tag for the trial, used in logging.
         log_root: Root directory for logging.
         seed: Random seed for reproducibility.
-    
+
     Returns:
         Mean validation score across inner splits for the outer fold.
-        
+
     """
     pl.seed_everything(seed, workers=True)
     fold_indices = np.asarray(fold_indices, dtype=int)
@@ -286,7 +287,6 @@ def evaluate_trial_on_fold(
 
     val: List[float] = []
     for rep_id, (train_idx, val_idx) in enumerate(zip(train_reps, val_reps, strict=False), start=1):
-
         # map local indices (within fold) back to absolute indices
         train_abs_idx = [fold_indices[i] for i in train_idx]
         val_abs_idx = [fold_indices[i] for i in val_idx]
@@ -344,7 +344,6 @@ def evaluate_trial_on_fold(
                 }
             )
 
-
     return float(np.mean(val))
 
 
@@ -383,10 +382,14 @@ def _train_one(
         loaders = loader_cache.get_loaders(cfg, train_idx, val_idx, test_list, seed)
     else:
         loaders = make_loaders(
-            bundle=type("BundleView", (), {  # quick view object so we don't refactor signatures elsewhere
-                "attached_pair_dps": attached_pair_dps,
-                "featurizer":        featurizer
-            })(),
+            bundle=type(
+                "BundleView",
+                (),
+                {  # quick view object so we don't refactor signatures elsewhere
+                    "attached_pair_dps": attached_pair_dps,
+                    "featurizer": featurizer,
+                },
+            )(),
             cfg=cfg,
             train_idx=list(map(int, train_idx)),
             val_idx=list(map(int, val_idx)),
@@ -404,17 +407,22 @@ def _train_one(
     arr_layer_on = bool(cfg.get("enable_arrhenius_layer", True))
     arr_mean_for = arr_scale_for = arr_mean_rev = arr_scale_rev = None
     if arr_layer_on:
-        arr_mean_for, arr_scale_for, arr_mean_rev, arr_scale_rev = compute_arrhenius_scalers_from_train(
-            train_loader, y_scaler, cfg["temperatures"]
-        )
+        (
+            arr_mean_for,
+            arr_scale_for,
+            arr_mean_rev,
+            arr_scale_rev,
+        ) = compute_arrhenius_scalers_from_train(train_loader, y_scaler, cfg["temperatures"])
 
     model = model_factory_from_cfg(
         cfg,
         unscaler=unscaler,
         ea_scales_for=y_scaler.named_transformers_["t2"],  # Ea_for
         ea_scales_rev=y_scaler.named_transformers_["t5"],  # Ea_rev
-        arr_mean_for=arr_mean_for, arr_scale_for=arr_scale_for,
-        arr_mean_rev=arr_mean_rev, arr_scale_rev=arr_scale_rev,
+        arr_mean_for=arr_mean_for,
+        arr_scale_for=arr_scale_for,
+        arr_mean_rev=arr_mean_rev,
+        arr_scale_rev=arr_scale_rev,
         featurizer=featurizer,
         x_d_dim=x_d_dim,
     )
@@ -507,7 +515,9 @@ def _train_one(
             test_metrics = {str(k): float(v) for k, v in raw_metrics.items()}
             test_loss = test_metrics.get("test_loss")
             for k, v in test_metrics.items():
-                name = k if k.startswith("test/") else f"test/{k}" if k != "test_loss" else "test/loss"
+                name = (
+                    k if k.startswith("test/") else f"test/{k}" if k != "test_loss" else "test/loss"
+                )
                 metrics_to_log[name] = v
 
     if logger is not None:
@@ -525,7 +535,6 @@ def _train_one(
         test_metrics=test_metrics,
         checkpoint_path=best_checkpoint_path,
     )
-
 
 
 def eval_final_cfg_on_kfold(
@@ -560,7 +569,9 @@ def eval_final_cfg_on_kfold(
             started = True
 
         for fold_id, (fold_idx, holdout_idx) in enumerate(outer_splits):
-            pseudo = _PseudoTrial(f"{tag}-f{fold_id}", trial_id if trial_id is not None else fold_id)
+            pseudo = _PseudoTrial(
+                f"{tag}-f{fold_id}", trial_id if trial_id is not None else fold_id
+            )
             if logger is not None and trial_id is not None:
                 base_seed = cfg.get("seed", 42)
                 logger.log_seed(
@@ -659,7 +670,9 @@ def eval_final_cfg_on_kfold(
         if started:
             logger.aggregate_and_store(trial_id)
             if record_predictions and checkpoint_records:
-                _log_predictions_from_checkpoints(checkpoint_records, bundle, cfg, logger, trial_id, loader_cache)
+                _log_predictions_from_checkpoints(
+                    checkpoint_records, bundle, cfg, logger, trial_id, loader_cache
+                )
             logger.end_trial(trial_id, "complete")
 
     except Exception:
@@ -722,7 +735,9 @@ def train_final_cfg_on_holdout(
 
     if fixed_train_indices is not None or fixed_test_indices is not None:
         if fixed_train_indices is None or fixed_test_indices is None:
-            raise ValueError("Both fixed_train_indices and fixed_test_indices must be provided together.")
+            raise ValueError(
+                "Both fixed_train_indices and fixed_test_indices must be provided together."
+            )
         train_base_idx = list(map(int, fixed_train_indices))
         test_idx = list(map(int, fixed_test_indices))
     else:
@@ -780,7 +795,9 @@ def train_final_cfg_on_holdout(
     results: List[Dict[str, Any]] = []
 
     try:
-        for rep_id, (tr_loc, val_loc) in enumerate(zip(inner_train_reps, inner_val_reps, strict=False)):
+        for rep_id, (tr_loc, val_loc) in enumerate(
+            zip(inner_train_reps, inner_val_reps, strict=False)
+        ):
             train_abs_idx = [train_base_idx[i] for i in tr_loc]
             val_abs_idx = [train_base_idx[i] for i in val_loc]
             sub_seed = base_seed + (rep_id + 1) * 1000
@@ -972,13 +989,23 @@ def export_final_split_details(
             test_dataset = loaders.get("test_dataset")
 
             batch_size = int(cfg.get("batch_size", 128))
-            train_eval_loader = _build_eval_loader(train_dataset, min(batch_size, len(train_idx) or 1), sub_seed + 101)
-            val_eval_loader = _build_eval_loader(val_dataset, min(batch_size, len(val_idx) or 1), sub_seed + 103)
-            test_eval_loader = _build_eval_loader(test_dataset, min(batch_size, len(test_idx) or 1), sub_seed + 105)
+            train_eval_loader = _build_eval_loader(
+                train_dataset, min(batch_size, len(train_idx) or 1), sub_seed + 101
+            )
+            val_eval_loader = _build_eval_loader(
+                val_dataset, min(batch_size, len(val_idx) or 1), sub_seed + 103
+            )
+            test_eval_loader = _build_eval_loader(
+                test_dataset, min(batch_size, len(test_idx) or 1), sub_seed + 105
+            )
 
-            model = ArrheniusMultiComponentMPNN.load_from_checkpoint(checkpoint_path, map_location="cpu")
+            model = ArrheniusMultiComponentMPNN.load_from_checkpoint(
+                checkpoint_path, map_location="cpu"
+            )
             model.eval()
-            trainer = pl.Trainer(logger=False, enable_progress_bar=False, accelerator="cpu", devices=1)
+            trainer = pl.Trainer(
+                logger=False, enable_progress_bar=False, accelerator="cpu", devices=1
+            )
 
             prediction_map: Dict[str, Dict[str, Any]] = {}
             for split_name, loader, indices in (
@@ -1002,11 +1029,7 @@ def export_final_split_details(
                 (combo_tag, rep_idx, json.dumps(scaler_payload)),
             )
 
-            for split_name, indices in (
-                ("train", train_idx),
-                ("val", val_idx),
-                ("test", test_idx),
-            ):
+            for split_name, indices in (("train", train_idx), ("val", val_idx), ("test", test_idx)):
                 if not indices:
                     continue
                 preds = prediction_map.get(split_name, {})
@@ -1027,7 +1050,9 @@ def export_final_split_details(
                     (A_rev_true, n_rev_true, Ea_rev_true) = _arrhenius_from_dp(dp_r)
 
                     pred_vals = (
-                        y_pred_raw[pos] if y_pred_raw is not None and pos < len(y_pred_raw) else None
+                        y_pred_raw[pos]
+                        if y_pred_raw is not None and pos < len(y_pred_raw)
+                        else None
                     )
                     if pred_vals is not None:
                         A_for_pred, n_for_pred, Ea_for_pred, A_rev_pred, n_rev_pred, Ea_rev_pred = [

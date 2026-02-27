@@ -24,6 +24,7 @@ def _parse_last_orientation(lines: List[str]) -> Optional[pd.DataFrame]:
     Parse the last Gaussian orientation table (prefers Standard orientation).
     Returns columns: focus_atom_idx, atom_symbol, x, y, z
     """
+
     def _scan(kind: str) -> Optional[pd.DataFrame]:
         starts = [i for i, l in enumerate(lines) if kind in l]
         if not starts:
@@ -48,6 +49,7 @@ def _parse_last_orientation(lines: List[str]) -> Optional[pd.DataFrame]:
                 anum = int(parts[1])
                 try:
                     from rdkit import Chem
+
                     sym = Chem.GetPeriodicTable().GetElementSymbol(anum)
                 except Exception:
                     sym = str(anum)
@@ -181,7 +183,9 @@ def parse_gaussian_qm(log_path: str) -> pd.DataFrame:
     frames = [df for df in (mull, apt, frc, xyz) if df is not None]
     base = frames[0][["focus_atom_idx"]].copy()
     for df in frames[1:]:
-        base = base.merge(df[["focus_atom_idx"]].drop_duplicates(), on="focus_atom_idx", how="outer")
+        base = base.merge(
+            df[["focus_atom_idx"]].drop_duplicates(), on="focus_atom_idx", how="outer"
+        )
     base = base.sort_values("focus_atom_idx").reset_index(drop=True)
 
     if mull is not None:
@@ -209,11 +213,7 @@ def parse_gaussian_qm(log_path: str) -> pd.DataFrame:
         base["f_mag"] = np.nan
 
     if xyz is not None:
-        base = base.merge(
-            xyz[["focus_atom_idx", "x", "y", "z"]],
-            on="focus_atom_idx",
-            how="left",
-        )
+        base = base.merge(xyz[["focus_atom_idx", "x", "y", "z"]], on="focus_atom_idx", how="left")
     else:
         base["x"] = np.nan
         base["y"] = np.nan

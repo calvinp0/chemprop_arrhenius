@@ -3,6 +3,8 @@ from copy import deepcopy
 from typing import Any, Dict, Tuple
 
 Key = Tuple[str, ...]
+
+
 def _deep_get(d: Dict[str, Any], path: Key, default=None):
     cur = d
     for p in path:
@@ -11,23 +13,27 @@ def _deep_get(d: Dict[str, Any], path: Key, default=None):
         cur = cur[p]
     return cur
 
+
 def _deep_set(d: Dict[str, Any], path: Key, value):
     cur = d
     for p in path[:-1]:
         cur = cur.setdefault(p, {})
     cur[path[-1]] = value
 
+
 def config_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     _cfg = deepcopy(cfg)
 
     # Dataset
-    _cfg.setdefault("extra_mode", "baseline")   # baseline|geom_only|local|atom|rad|rad_local|rad_local_noc
-    _cfg.setdefault("global_mode", "none")      # none|morgan_binary|morgan_count|rdkit2d_norm
+    _cfg.setdefault(
+        "extra_mode", "baseline"
+    )  # baseline|geom_only|local|atom|rad|rad_local|rad_local_noc
+    _cfg.setdefault("global_mode", "none")  # none|morgan_binary|morgan_count|rdkit2d_norm
     _cfg.setdefault("temp_range", [300, 3100])
     _cfg.setdefault("temp_interval", 100)
 
     # Splitter
-    _cfg.setdefault("num_reps", _deep_get(_cfg, ("splits","inner_reps"), 5))
+    _cfg.setdefault("num_reps", _deep_get(_cfg, ("splits", "inner_reps"), 5))
     _cfg.setdefault("distance_metric", "jaccard")
     _cfg.setdefault("joint_mode", "order-invariant")
     _cfg.setdefault("donor_weight", 0.5)
@@ -38,14 +44,13 @@ def config_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     # Trainer
     _cfg.setdefault("trainer", {})
-    _cfg["trainer"].setdefault("batch_size", _deep_get(_cfg, ("trainer","batch_size"), 128))
-    _cfg["trainer"].setdefault("patience",   _deep_get(_cfg, ("trainer","patience"),   20))
-    _cfg["trainer"].setdefault("max_epochs", _deep_get(_cfg, ("trainer","max_epochs"), 200))
+    _cfg["trainer"].setdefault("batch_size", _deep_get(_cfg, ("trainer", "batch_size"), 128))
+    _cfg["trainer"].setdefault("patience", _deep_get(_cfg, ("trainer", "patience"), 20))
+    _cfg["trainer"].setdefault("max_epochs", _deep_get(_cfg, ("trainer", "max_epochs"), 200))
     ### Flatten
     _cfg["batch_size"] = _cfg["trainer"].pop("batch_size")
-    _cfg["patience"]   = _cfg["trainer"].pop("patience")
+    _cfg["patience"] = _cfg["trainer"].pop("patience")
     _cfg["max_epochs"] = _cfg["trainer"].pop("max_epochs")
-
 
     # Model: MPNN
     _cfg.setdefault("mp_hidden", 300)

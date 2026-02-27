@@ -16,7 +16,9 @@ from arrhenius.modeling.nn.transformers import UnscaleColumnTransform
 from arrhenius.modeling.module.pl_rateconstant_dir import ArrheniusMultiComponentMPNN
 from chemprop.CUSTOM.featuriser.featurise import Featuriser, MOL_TYPES
 from chemprop.featurizers import (
-    MorganBinaryFeaturizer, MorganCountFeaturizer, V1RDKit2DNormalizedFeaturizer
+    MorganBinaryFeaturizer,
+    MorganCountFeaturizer,
+    V1RDKit2DNormalizedFeaturizer,
 )
 from sklearn.preprocessing import StandardScaler, PowerTransformer
 from arrhenius.training.hpo.feature_modes import (
@@ -33,9 +35,15 @@ from arrhenius.training.hpo.feature_modes import (
 USE_DIHEDRAL_SIN_COS = True
 CP_NUM_WORKERS = int(os.getenv("CP_NUM_WORKERS", "4"))
 
+
 # ---------- small helpers ----------
-def _mol(obj): return obj if not isinstance(obj, tuple) else obj[0]
-def ik14(mol): return inchi.MolToInchiKey(_mol(mol))[:14]
+def _mol(obj):
+    return obj if not isinstance(obj, tuple) else obj[0]
+
+
+def ik14(mol):
+    return inchi.MolToInchiKey(_mol(mol))[:14]
+
 
 def rbf_expand(values, num_centers=16, r_min=0.5, r_max=8.0, gamma=None):
     values = np.asarray(values, dtype=np.float32).reshape(-1, 1)
@@ -45,11 +53,15 @@ def rbf_expand(values, num_centers=16, r_min=0.5, r_max=8.0, gamma=None):
         gamma = np.float32(1.0 / (step**2 + 1e-8))
     return np.exp(-gamma * (values - centers) ** 2)
 
+
 def dihedral_to_sin_cos(x):
     x = np.asarray(x, dtype=np.float32)
     return np.stack([np.sin(x), np.cos(x)], axis=1)
 
-def train_radius_bounds(attached_pair_dps, train_idx, extras_mode: str | None = None, hard=(0.5, 8.0)):
+
+def train_radius_bounds(
+    attached_pair_dps, train_idx, extras_mode: str | None = None, hard=(0.5, 8.0)
+):
     mode_cfg = mode_settings(canonicalize_extra_mode(extras_mode or "baseline"))
     radius_idx = mode_cfg["cols"].index(RADIUS_COL) if RADIUS_COL in mode_cfg["cols"] else None
     if (not mode_cfg["rad_mode"]) or radius_idx is None:
@@ -65,17 +77,21 @@ def train_radius_bounds(attached_pair_dps, train_idx, extras_mode: str | None = 
                 )
             v = A[:, radius_idx]
             vals.append(v[np.isfinite(v)])
-    if not vals: return hard
+    if not vals:
+        return hard
     v = np.concatenate(vals)
     lo = max(hard[0], float(np.percentile(v, 1)))
     hi = min(hard[1], float(np.percentile(v, 99)))
-    if hi - lo < 1e-3: lo, hi = hard
+    if hi - lo < 1e-3:
+        lo, hi = hard
     return lo, hi
+
 
 def torch_generator(seed: int) -> torch.Generator:
     g = torch.Generator()
     g.manual_seed(seed)
     return g
+
 
 # ---------- feature attachment (lifted & trimmed from your script) ----------
 def _build_global_featurizer(global_mode: str, bits: int, radius: int):
@@ -90,6 +106,7 @@ def _build_global_featurizer(global_mode: str, bits: int, radius: int):
         fe = V1RDKit2DNormalizedFeaturizer()
         return lambda mol: fe(mol).astype(np.float32), True
     return None, True  # global_mode == "none"
+
 
 def attach_feats_to_dps_pairwise(
     feat_data,
@@ -115,23 +132,41 @@ def attach_feats_to_dps_pairwise(
 
     gf, center_globals = _build_global_featurizer(global_mode, morgan_bits, morgan_radius)
 
-    def _clean(n): return n.replace("_r1h","").replace("_r2h","")
+    def _clean(n):
+        return n.replace("_r1h", "").replace("_r2h", "")
+
     idx_by_rxn_r1h = {_clean(dp.name): i for i, dp in enumerate(feat_data[0])}
     idx_by_rxn_r2h = {_clean(dp.name): i for i, dp in enumerate(feat_data[1])}
     common_rxns = sorted(set(idx_by_rxn_r1h) & set(idx_by_rxn_r2h))
 
     def _impute_inplace(A, cols):
         name2idx = {n: i for i, n in enumerate(cols)}
-        cont = [c for c in ("q_mull","q_apt","f_mag","angle","dihedral","radius") if c in name2idx]
-        bins = [c for c in (
-            "r_exist","a_exist","d_exist","is_donor","is_acceptor","is_donor_H",
-            "is_acceptor_H","is_acceptor_neighbor","is_donor_neighbor",
-        ) if c in name2idx]
+        cont = [
+            c for c in ("q_mull", "q_apt", "f_mag", "angle", "dihedral", "radius") if c in name2idx
+        ]
+        bins = [
+            c
+            for c in (
+                "r_exist",
+                "a_exist",
+                "d_exist",
+                "is_donor",
+                "is_acceptor",
+                "is_donor_H",
+                "is_acceptor_H",
+                "is_acceptor_neighbor",
+                "is_donor_neighbor",
+            )
+            if c in name2idx
+        ]
         for c in bins:
-            j = name2idx[c]; m = ~np.isfinite(A[:, j]); 
-            if m.any(): A[m, j] = 0.0
+            j = name2idx[c]
+            m = ~np.isfinite(A[:, j])
+            if m.any():
+                A[m, j] = 0.0
         for c in cont:
-            j = name2idx[c]; col = A[:, j]
+            j = name2idx[c]
+            col = A[:, j]
             if not np.isfinite(col).all():
                 finite = col[np.isfinite(col)]
                 fill = float(np.median(finite)) if finite.size else 0.0
@@ -172,15 +207,22 @@ def attach_feats_to_dps_pairwise(
         mol1 = dp1.mol if not isinstance(dp1.mol, tuple) else dp1.mol[0]
 
         if use_atom_extras:
-            sub0 = atom_extra_feats[(atom_extra_feats[rxn_col]==rxn) & (atom_extra_feats[moltype_col]==r1h_tag)].sort_values(atom_index_col)
-            sub1 = atom_extra_feats[(atom_extra_feats[rxn_col]==rxn) & (atom_extra_feats[moltype_col]==r2h_tag)].sort_values(atom_index_col)
-            if sub0.empty or sub1.empty: continue
+            sub0 = atom_extra_feats[
+                (atom_extra_feats[rxn_col] == rxn) & (atom_extra_feats[moltype_col] == r1h_tag)
+            ].sort_values(atom_index_col)
+            sub1 = atom_extra_feats[
+                (atom_extra_feats[rxn_col] == rxn) & (atom_extra_feats[moltype_col] == r2h_tag)
+            ].sort_values(atom_index_col)
+            if sub0.empty or sub1.empty:
+                continue
             A0 = sub0[cols].to_numpy(dtype=np.float32, copy=True)
             A1 = sub1[cols].to_numpy(dtype=np.float32, copy=True)
-            _impute_inplace(A0, cols); _impute_inplace(A1, cols)
-            _mask_by_path_hops(A0, sub0, cols); _mask_by_path_hops(A1, sub1, cols)
-            m0 = sub0["is_donor"].to_numpy(np.float32).reshape(-1,1)
-            m1 = sub1["is_acceptor"].to_numpy(np.float32).reshape(-1,1)
+            _impute_inplace(A0, cols)
+            _impute_inplace(A1, cols)
+            _mask_by_path_hops(A0, sub0, cols)
+            _mask_by_path_hops(A1, sub1, cols)
+            m0 = sub0["is_donor"].to_numpy(np.float32).reshape(-1, 1)
+            m1 = sub1["is_acceptor"].to_numpy(np.float32).reshape(-1, 1)
         else:
             A0, A1 = dp0.V_f, dp1.V_f
             m0 = getattr(dp0, "V_d", None)
@@ -191,25 +233,41 @@ def attach_feats_to_dps_pairwise(
             gf0 = gf(dp0.mol).reshape(-1)
             gf1 = gf(dp1.mol).reshape(-1)
             X_pair = np.concatenate([gf0, gf1], axis=0).astype(np.float32)
-            if x_d_shape == 0: x_d_shape = int(X_pair.shape[0])
+            if x_d_shape == 0:
+                x_d_shape = int(X_pair.shape[0])
 
         new0 = cpdata.MoleculeDatapoint(
-            mol=dp0.mol, y=dp0.y, weight=dp0.weight,
-            gt_mask=dp0.gt_mask, lt_mask=dp0.lt_mask,
-            V_f=A0, E_f=dp0.E_f, V_d=m0,
+            mol=dp0.mol,
+            y=dp0.y,
+            weight=dp0.weight,
+            gt_mask=dp0.gt_mask,
+            lt_mask=dp0.lt_mask,
+            V_f=A0,
+            E_f=dp0.E_f,
+            V_d=m0,
             x_d=(X_pair if X_pair is not None else dp0.x_d),
-            x_phase=dp0.x_phase, name=dp0.name,
+            x_phase=dp0.x_phase,
+            name=dp0.name,
         )
         new1 = cpdata.MoleculeDatapoint(
-            mol=dp1.mol, y=dp1.y, weight=dp1.weight,
-            gt_mask=dp1.gt_mask, lt_mask=dp1.lt_mask,
-            V_f=A1, E_f=dp1.E_f, V_d=m1,
+            mol=dp1.mol,
+            y=dp1.y,
+            weight=dp1.weight,
+            gt_mask=dp1.gt_mask,
+            lt_mask=dp1.lt_mask,
+            V_f=A1,
+            E_f=dp1.E_f,
+            V_d=m1,
             x_d=(X_pair if X_pair is not None else dp1.x_d),
-            x_phase=dp1.x_phase, name=dp1.name,
+            x_phase=dp1.x_phase,
+            name=dp1.name,
         )
-        datapoints[0].append(new0); datapoints[1].append(new1); kept_idx.append(i0)
+        datapoints[0].append(new0)
+        datapoints[1].append(new1)
+        kept_idx.append(i0)
 
     return datapoints, kept_idx, x_d_shape
+
 
 # ---------- bundle ----------
 @dataclass
@@ -224,12 +282,13 @@ class DataBundle:
     extras_mode: str
     rad_source: str
 
+
 # ---------- public API: prepare once ----------
 def prepare_data(
     sdf_path: str,
     target_csv: str,
     extras_mode: str,
-    global_mode: str,                    # "none"|"morgan_binary"|"morgan_count"|"rdkit2d_norm"
+    global_mode: str,  # "none"|"morgan_binary"|"morgan_count"|"rdkit2d_norm"
     morgan_bits: int = 2048,
     morgan_radius: int = 2,
     rad_dir: Optional[str] = None,
@@ -252,8 +311,14 @@ def prepare_data(
     )
     atom_extra = None
     if mode_cfg["use_extras"]:
-        assert rad_dir and os.path.isdir(rad_dir), "rad_dir required when selected extra_mode uses atom extras"
-        preferred = "atom_with_geom_feats_path.csv" if rad_source == "path" else "atom_with_geom_feats_rad.csv"
+        assert rad_dir and os.path.isdir(
+            rad_dir
+        ), "rad_dir required when selected extra_mode uses atom extras"
+        preferred = (
+            "atom_with_geom_feats_path.csv"
+            if rad_source == "path"
+            else "atom_with_geom_feats_rad.csv"
+        )
         fallback = "atom_with_geom_feats_default.csv" if rad_source == "rad" else None
         rad_csv = os.path.join(rad_dir, preferred)
         if not os.path.isfile(rad_csv) and fallback is not None:
@@ -271,20 +336,26 @@ def prepare_data(
         global_mode=global_mode,
         morgan_bits=morgan_bits,
         morgan_radius=morgan_radius,
-        rad_geom_cols={k: mode_cfg["cols"].index(k) for k in ("angle", "dihedral", "radius") if k in mode_cfg["cols"]},
+        rad_geom_cols={
+            k: mode_cfg["cols"].index(k)
+            for k in ("angle", "dihedral", "radius")
+            if k in mode_cfg["cols"]
+        },
         rad_mask_hops=mode_cfg["rad_mask"],
     )
 
     N = len(attached_pair_dps[0])
-    donors = [ _mol(attached_pair_dps[0][i].mol) for i in range(N) ]
-    accept = [ _mol(attached_pair_dps[1][i].mol) for i in range(N) ]
+    donors = [_mol(attached_pair_dps[0][i].mol) for i in range(N)]
+    accept = [_mol(attached_pair_dps[1][i].mol) for i in range(N)]
 
     pair_group_keys = [
         "__".join(sorted((ik14(attached_pair_dps[0][i].mol), ik14(attached_pair_dps[1][i].mol))))
         for i in range(N)
     ]
 
-    extra_dim = atom_extra_dim(mode_cfg["cols"], mode_cfg["rad_mode"]) if mode_cfg["use_extras"] else 0
+    extra_dim = (
+        atom_extra_dim(mode_cfg["cols"], mode_cfg["rad_mode"]) if mode_cfg["use_extras"] else 0
+    )
     featurizer = mode_cfg["featurizer_cls"](extra_atom_fdim=extra_dim)
 
     return DataBundle(
@@ -298,6 +369,7 @@ def prepare_data(
         extras_mode=extras_mode,
         rad_source=rad_source,
     )
+
 
 # ---------- public API: build loaders per split ----------
 def make_loaders(
@@ -315,7 +387,9 @@ def make_loaders(
 ):
     # 1) wrap into chemprop datasets
     train_dsets = [
-        cpdata.MoleculeDataset([bundle.attached_pair_dps[c][i] for i in train_idx], bundle.featurizer)
+        cpdata.MoleculeDataset(
+            [bundle.attached_pair_dps[c][i] for i in train_idx], bundle.featurizer
+        )
         for c in range(len(MOL_TYPES))
     ]
     val_dsets = [
@@ -323,25 +397,29 @@ def make_loaders(
         for c in range(len(MOL_TYPES))
     ]
     train_wrap = [ArrMoleculeDataset(d) for d in train_dsets]
-    val_wrap   = [ArrMoleculeDataset(d) for d in val_dsets]
-    test_wrap  = None
-    test_mcd   = None
+    val_wrap = [ArrMoleculeDataset(d) for d in val_dsets]
+    test_wrap = None
+    test_mcd = None
 
     if test_idx is not None:
         test_dsets = [
-            cpdata.MoleculeDataset([bundle.attached_pair_dps[c][i] for i in test_idx], bundle.featurizer)
+            cpdata.MoleculeDataset(
+                [bundle.attached_pair_dps[c][i] for i in test_idx], bundle.featurizer
+            )
             for c in range(len(MOL_TYPES))
         ]
         test_wrap = [ArrMoleculeDataset(d) for d in test_dsets]
-        test_mcd  = ArrMulticomponentDataset(test_wrap)
+        test_mcd = ArrMulticomponentDataset(test_wrap)
     train_mcd = ArrMulticomponentDataset(train_wrap)
-    val_mcd   = ArrMulticomponentDataset(val_wrap)
+    val_mcd = ArrMulticomponentDataset(val_wrap)
 
     # 2) radius bounds from TRAIN (for RBF)
     extras_mode_cfg = canonicalize_extra_mode(cfg.get("extra_mode", bundle.extras_mode))
     mode_cfg = mode_settings(extras_mode_cfg)
     radius_idx = mode_cfg["cols"].index(RADIUS_COL) if RADIUS_COL in mode_cfg["cols"] else None
-    dihedral_idx = mode_cfg["cols"].index(DIHEDRAL_COL) if DIHEDRAL_COL in mode_cfg["cols"] else None
+    dihedral_idx = (
+        mode_cfg["cols"].index(DIHEDRAL_COL) if DIHEDRAL_COL in mode_cfg["cols"] else None
+    )
     has_vf = any(
         bundle.attached_pair_dps[c][i].V_f is not None
         for i in train_idx
@@ -351,7 +429,9 @@ def make_loaders(
     if preset_r_bounds is not None and mode_cfg["rad_mode"] and radius_idx is not None:
         r_min, r_max = preset_r_bounds
     elif has_vf and mode_cfg["rad_mode"] and radius_idx is not None:
-        r_min, r_max = train_radius_bounds(bundle.attached_pair_dps, train_idx, extras_mode=extras_mode_cfg)
+        r_min, r_max = train_radius_bounds(
+            bundle.attached_pair_dps, train_idx, extras_mode=extras_mode_cfg
+        )
     else:
         r_min, r_max = (0.5, 8.0)
 
@@ -368,11 +448,11 @@ def make_loaders(
 
     # 4) target scalers (fit on train, apply to val)
     cols_map = {
-        0: StandardScaler(),                          # A_log10_for
-        1: StandardScaler(),                          # n_for
+        0: StandardScaler(),  # A_log10_for
+        1: StandardScaler(),  # n_for
         2: PowerTransformer(method="yeo-johnson", standardize=True),  # Ea_for
-        3: StandardScaler(),                          # A_log10_rev
-        4: StandardScaler(),                          # n_rev
+        3: StandardScaler(),  # A_log10_rev
+        4: StandardScaler(),  # n_rev
         5: PowerTransformer(method="yeo-johnson", standardize=True),  # Ea_rev
     }
     if preset_y_scaler is not None:
@@ -416,16 +496,34 @@ def make_loaders(
     # 6) loaders
     pin = True if torch.cuda.is_available() else False
     g_train = torch_generator(seed + 11)
-    g_val   = torch_generator(seed + 13)
-    train_loader = build_loader_mc(train_mcd, batch_size=int(cfg.get("batch_size", 128)), generator=g_train,
-                                   shuffle=True, num_workers=CP_NUM_WORKERS, pin_memory=pin)
-    val_loader   = build_loader_mc(val_mcd,   batch_size=max(1, int(cfg.get("batch_size", 128))//2), generator=g_val,
-                                   shuffle=False, num_workers=CP_NUM_WORKERS, pin_memory=pin)
+    g_val = torch_generator(seed + 13)
+    train_loader = build_loader_mc(
+        train_mcd,
+        batch_size=int(cfg.get("batch_size", 128)),
+        generator=g_train,
+        shuffle=True,
+        num_workers=CP_NUM_WORKERS,
+        pin_memory=pin,
+    )
+    val_loader = build_loader_mc(
+        val_mcd,
+        batch_size=max(1, int(cfg.get("batch_size", 128)) // 2),
+        generator=g_val,
+        shuffle=False,
+        num_workers=CP_NUM_WORKERS,
+        pin_memory=pin,
+    )
     test_loader = None
     if test_mcd is not None:
         g_test = torch_generator(seed + 17)
-        test_loader = build_loader_mc(test_mcd, batch_size=int(cfg.get("batch_size", 128)), generator=g_test,
-                                      shuffle=False, num_workers=CP_NUM_WORKERS, pin_memory=pin)
+        test_loader = build_loader_mc(
+            test_mcd,
+            batch_size=int(cfg.get("batch_size", 128)),
+            generator=g_test,
+            shuffle=False,
+            num_workers=CP_NUM_WORKERS,
+            pin_memory=pin,
+        )
 
     return {
         "train_loader": train_loader,
@@ -443,9 +541,7 @@ def make_loaders(
 
 
 def fit_global_normalizers(
-    bundle: DataBundle,
-    cfg: Dict[str, Any],
-    train_idx: Sequence[int],
+    bundle: DataBundle, cfg: Dict[str, Any], train_idx: Sequence[int]
 ) -> Dict[str, Any]:
     """
     Fit target and input scalers once on the provided indices so they can be reused
@@ -453,7 +549,9 @@ def fit_global_normalizers(
     """
     train_idx = list(map(int, train_idx))
     train_dsets = [
-        cpdata.MoleculeDataset([bundle.attached_pair_dps[c][i] for i in train_idx], bundle.featurizer)
+        cpdata.MoleculeDataset(
+            [bundle.attached_pair_dps[c][i] for i in train_idx], bundle.featurizer
+        )
         for c in range(len(MOL_TYPES))
     ]
     train_wrap = [ArrMoleculeDataset(d) for d in train_dsets]
@@ -462,7 +560,9 @@ def fit_global_normalizers(
     extras_mode = canonicalize_extra_mode(cfg.get("extra_mode", bundle.extras_mode))
     mode_cfg = mode_settings(extras_mode)
     radius_idx = mode_cfg["cols"].index(RADIUS_COL) if RADIUS_COL in mode_cfg["cols"] else None
-    dihedral_idx = mode_cfg["cols"].index(DIHEDRAL_COL) if DIHEDRAL_COL in mode_cfg["cols"] else None
+    dihedral_idx = (
+        mode_cfg["cols"].index(DIHEDRAL_COL) if DIHEDRAL_COL in mode_cfg["cols"] else None
+    )
     has_vf = any(
         bundle.attached_pair_dps[c][i].V_f is not None
         for i in train_idx
@@ -535,11 +635,11 @@ def compute_arrhenius_scalers_from_train(train_loader, y_scaler, temps: Sequence
     t5 = y_scaler.named_transformers_["t5"]  # Ea_rev (PowerTransformer)
 
     A10_for = t0.inverse_transform(ys[:, 0:1])[:, 0]
-    n_for   = t1.inverse_transform(ys[:, 1:2])[:, 0]
-    Ea_for  = t2.inverse_transform(ys[:, 2:3])[:, 0]
+    n_for = t1.inverse_transform(ys[:, 1:2])[:, 0]
+    Ea_for = t2.inverse_transform(ys[:, 2:3])[:, 0]
     A10_rev = t3.inverse_transform(ys[:, 3:4])[:, 0]
-    n_rev   = t4.inverse_transform(ys[:, 4:5])[:, 0]
-    Ea_rev  = t5.inverse_transform(ys[:, 5:6])[:, 0]
+    n_rev = t4.inverse_transform(ys[:, 4:5])[:, 0]
+    Ea_rev = t5.inverse_transform(ys[:, 5:6])[:, 0]
 
     T = np.asarray(list(temps), dtype=np.float64)[None, :]  # (1, N_T)
     R = 8.31446261815324e-3  # kJ mol^-1 K^-1
@@ -565,10 +665,7 @@ def compute_arrhenius_scalers_from_train(train_loader, y_scaler, temps: Sequence
 
 
 def load_saved_split_indices(
-    db_path: str,
-    study_name: str,
-    trial_id: int,
-    fold_id: Optional[int] = None,
+    db_path: str, study_name: str, trial_id: int, fold_id: Optional[int] = None
 ) -> dict:
     """
     Convenience helper to retrieve stored split indices from the metrics DB.
@@ -608,7 +705,9 @@ def loaders_from_saved_split(
         if name is None:
             return None
         if name not in split_map:
-            raise KeyError(f"Split '{name}' not recorded for trial_id={trial_id}, fold_id={fold_id}")
+            raise KeyError(
+                f"Split '{name}' not recorded for trial_id={trial_id}, fold_id={fold_id}"
+            )
         return list(map(int, split_map[name]))
 
     train_idx = _get(train_key)
@@ -619,10 +718,5 @@ def loaders_from_saved_split(
         raise ValueError("Both train and val splits must be present to rebuild loaders.")
 
     return make_loaders(
-        bundle=bundle,
-        cfg=cfg,
-        train_idx=train_idx,
-        val_idx=val_idx,
-        test_idx=test_idx,
-        seed=seed,
+        bundle=bundle, cfg=cfg, train_idx=train_idx, val_idx=val_idx, test_idx=test_idx, seed=seed
     )

@@ -10,7 +10,9 @@ import torch.nn.functional as F
 class ArrheniusLossMixin:
     """Loss computation for scaled triplets and optional Arrhenius supervision."""
 
-    def _loss_triplet(self, Yp_s: Tensor, Yt_s: Tensor, lnKp: Tensor, lnKt: Tensor, w: Tensor) -> Tensor:
+    def _loss_triplet(
+        self, Yp_s: Tensor, Yt_s: Tensor, lnKp: Tensor, lnKt: Tensor, w: Tensor
+    ) -> Tensor:
         A10_p, n_p, Ea_p = Yp_s.unbind(1)
         A10_t, n_t, Ea_t = Yt_s.unbind(1)
         _ = w  # task-level weights are currently not used per-sample

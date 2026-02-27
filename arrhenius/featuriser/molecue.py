@@ -7,6 +7,7 @@ from chemprop.data.molgraph import MolGraph
 
 from chemprop.featurizers.atom import MultiHotAtomFeaturizer
 
+
 @dataclass
 class GeometryMolGraphFeaturizer:
     """
@@ -16,6 +17,7 @@ class GeometryMolGraphFeaturizer:
       - sin/cos of dihedral A–B–C–D (+ availability mask)
     Missing geometry is encoded with zeros plus mask=0 to keep it distinct from a true 0 radian value.
     """
+
     def __init__(
         self,
         rbf_D_min: float = 0.0,
@@ -40,8 +42,8 @@ class GeometryMolGraphFeaturizer:
     def compute_angle(a: np.ndarray, b: np.ndarray, c: np.ndarray) -> float:
         ba = a - b
         bc = c - b
-        ba /= (np.linalg.norm(ba) + 1e-8)
-        bc /= (np.linalg.norm(bc) + 1e-8)
+        ba /= np.linalg.norm(ba) + 1e-8
+        bc /= np.linalg.norm(bc) + 1e-8
         cos_a = np.dot(ba, bc)
         return float(np.arccos(np.clip(cos_a, -1.0, 1.0)))
 
@@ -51,9 +53,9 @@ class GeometryMolGraphFeaturizer:
         b0 = -1.0 * (p1 - p0)
         b1 = p2 - p1
         b2 = p3 - p2
-        b1 /= (np.linalg.norm(b1) + 1e-8)
-        v = b0 - np.dot(b0, b1)[:, None] * b1 if b0.ndim>1 else b0 - np.dot(b0, b1) * b1
-        w = b2 - np.dot(b2, b1)[:, None] * b1 if b2.ndim>1 else b2 - np.dot(b2, b1) * b1
+        b1 /= np.linalg.norm(b1) + 1e-8
+        v = b0 - np.dot(b0, b1)[:, None] * b1 if b0.ndim > 1 else b0 - np.dot(b0, b1) * b1
+        w = b2 - np.dot(b2, b1)[:, None] * b1 if b2.ndim > 1 else b2 - np.dot(b2, b1) * b1
         x = np.dot(v, w)
         y = np.dot(np.cross(b1, v), w)
         return float(np.arctan2(y, x))
@@ -70,8 +72,11 @@ class GeometryMolGraphFeaturizer:
             raise ValueError(f"Expected {n_bonds} bond extras, got {len(bond_features_extra)}")
 
         # node features
-        V = np.zeros((1, self.atom_fdim), dtype=np.float32) if n_atoms == 0 else \
-            np.stack([self.atom_featurizer(a) for a in mol.GetAtoms()], dtype=np.float32)
+        V = (
+            np.zeros((1, self.atom_fdim), dtype=np.float32)
+            if n_atoms == 0
+            else np.stack([self.atom_featurizer(a) for a in mol.GetAtoms()], dtype=np.float32)
+        )
         if atom_features_extra is not None:
             V = np.hstack((V, atom_features_extra))
         V = V.astype(np.float32, copy=False)
@@ -117,7 +122,9 @@ class GeometryMolGraphFeaturizer:
         def angle_feat(src: int, dst: int) -> np.ndarray:
             """Aggregate sin/cos of angles theta(src, dst, k) over neighbors k of dst."""
             vals = []
-            for k in [n.GetIdx() for n in mol.GetAtomWithIdx(dst).GetNeighbors() if n.GetIdx() != src]:
+            for k in [
+                n.GetIdx() for n in mol.GetAtomWithIdx(dst).GetNeighbors() if n.GetIdx() != src
+            ]:
                 ang = self.compute_angle(coords[src], coords[dst], coords[k])
                 if not np.isfinite(ang):
                     if self.nan_debug:
@@ -136,7 +143,7 @@ class GeometryMolGraphFeaturizer:
         def torsion_feat(src: int, dst: int) -> np.ndarray:
             """Aggregate sin/cos over all torsions with central bond (src, dst)."""
             vals = []
-            for (i, j, k, l) in torsions_by_bond.get((src, dst), []):
+            for i, j, k, l in torsions_by_bond.get((src, dst), []):
                 dih = rdMolTransforms.GetDihedralRad(conf, i, j, k, l)
                 if not np.isfinite(dih):
                     continue
@@ -153,7 +160,13 @@ class GeometryMolGraphFeaturizer:
             for src, dst in ((u, v), (v, u)):
                 ang_sc, ang_has = angle_feat(src, dst)
                 dih_sc, dih_has = torsion_feat(src, dst)
-                feat_parts = [rbf_feat, ang_sc, np.array([ang_has], dtype=np.float32), dih_sc, np.array([dih_has], dtype=np.float32)]
+                feat_parts = [
+                    rbf_feat,
+                    ang_sc,
+                    np.array([ang_has], dtype=np.float32),
+                    dih_sc,
+                    np.array([dih_has], dtype=np.float32),
+                ]
                 if bond_features_extra is not None:
                     feat_parts.append(bond_features_extra[bond.GetIdx()])
                 feat = np.concatenate(feat_parts, axis=0).astype(np.float32)
@@ -179,9 +192,4 @@ class GeometryMolGraphFeaturizer:
             edge_index = np.zeros((2, 0), dtype=int)
             rev_edge_index = np.zeros((0,), dtype=int)
 
-        return MolGraph(
-            V=V,
-            E=E,
-            edge_index=edge_index,
-            rev_edge_index=rev_edge_index
-        )
+        return MolGraph(V=V, E=E, edge_index=edge_index, rev_edge_index=rev_edge_index)

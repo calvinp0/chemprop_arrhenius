@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 from typing import Optional
 import torch
@@ -27,16 +26,21 @@ _ACTS = {
     "leakyrelu": nn.LeakyReLU,
     "prelu": nn.PReLU,
 }
+
+
 def _act(name: str):
     return _ACTS.get((name or "relu").lower(), nn.ReLU)()
+
 
 class LazyMLP(nn.Module):
     """
     A tiny MLP that infers input width at first forward using nn.LazyLinear.
     Exposes .input_dim and .output_dim to mirror chemprop.nn.ffn.MLP.
     """
-    def __init__(self, out_dim: int, hidden_dim: int, n_layers: int,
-                 dropout: float, activation: str):
+
+    def __init__(
+        self, out_dim: int, hidden_dim: int, n_layers: int, dropout: float, activation: str
+    ):
         super().__init__()
         layers: list[nn.Module] = []
         if n_layers <= 0:
@@ -45,11 +49,13 @@ class LazyMLP(nn.Module):
             # first layer is lazy; subsequent are static (hidden_dim-known)
             layers.append(nn.LazyLinear(hidden_dim))
             layers.append(_act(activation))
-            if dropout > 0: layers.append(nn.Dropout(dropout))
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
             for _ in range(n_layers - 1):
                 layers.append(nn.Linear(hidden_dim, hidden_dim))
                 layers.append(_act(activation))
-                if dropout > 0: layers.append(nn.Dropout(dropout))
+                if dropout > 0:
+                    layers.append(nn.Dropout(dropout))
             layers.append(nn.Linear(hidden_dim, out_dim))
         self.net = nn.Sequential(*layers)
         self._input_dim: Optional[int] = None
@@ -65,9 +71,11 @@ class LazyMLP(nn.Module):
             self._input_dim = x.shape[1]
         return self.net(x)
 
+
 @PredictorRegistry.register("arrhenius-head")
 class ArrheniusHeadPredictor(_FFNPredictorBase):
     """Static when input_dim is provided; lazy when input_dim=None."""
+
     n_targets = 3
     _T_default_criterion = MSE
     _T_default_metric = MSE
@@ -75,7 +83,7 @@ class ArrheniusHeadPredictor(_FFNPredictorBase):
     def __init__(
         self,
         n_tasks: int = 1,
-        input_dim: Optional[int] = None,   # None => lazy
+        input_dim: Optional[int] = None,  # None => lazy
         hidden_dim: int = 512,
         n_layers: int = 1,
         dropout: float = 0.2,
@@ -115,7 +123,9 @@ class ArrheniusHeadPredictor(_FFNPredictorBase):
             self.criterion = criterion or Factory.build(
                 self._T_default_criterion, task_weights=wt, threshold=threshold
             )
-            self.output_transform = output_transform if output_transform is not None else nn.Identity()
+            self.output_transform = (
+                output_transform if output_transform is not None else nn.Identity()
+            )
 
     def forward(self, Z: Tensor) -> Tensor:
         return self.ffn(Z)

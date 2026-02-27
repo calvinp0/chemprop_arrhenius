@@ -17,6 +17,7 @@ class ArrheniusMetricsHooksMixin:
         bmgs, V_ds, X_d, targets, weights, *_ = batch
 
         if self.nan_debug:
+
             def _chk(name, t):
                 if t is None:
                     return
@@ -26,6 +27,7 @@ class ArrheniusMetricsHooksMixin:
                     return
                 if not torch.isfinite(t).all():
                     raise RuntimeError(f"nan_debug: non-finite in {name}")
+
             _chk("V_ds", V_ds)
             _chk("X_d", X_d)
             _chk("targets", targets)
@@ -67,20 +69,29 @@ class ArrheniusMetricsHooksMixin:
 
         if self.nan_debug:
             for name, t in (
-                ("Zf", Zf), ("Zr", Zr),
-                ("Yf_pred_s", Yf_pred_s), ("Yr_pred_s", Yr_pred_s),
-                ("Yf_true_s", Yf_true_s), ("Yr_true_s", Yr_true_s),
-                ("Pf_pred", Pf_pred), ("Pr_pred", Pr_pred),
-                ("Pf_true", Pf_true), ("Pr_true", Pr_true),
-                ("lnKf_p", lnKf_p), ("lnKf_t", lnKf_t),
-                ("lnKr_p", lnKr_p), ("lnKr_t", lnKr_t),
+                ("Zf", Zf),
+                ("Zr", Zr),
+                ("Yf_pred_s", Yf_pred_s),
+                ("Yr_pred_s", Yr_pred_s),
+                ("Yf_true_s", Yf_true_s),
+                ("Yr_true_s", Yr_true_s),
+                ("Pf_pred", Pf_pred),
+                ("Pr_pred", Pr_pred),
+                ("Pf_true", Pf_true),
+                ("Pr_true", Pr_true),
+                ("lnKf_p", lnKf_p),
+                ("lnKf_t", lnKf_t),
+                ("lnKr_p", lnKr_p),
+                ("lnKr_t", lnKr_t),
             ):
                 if t is not None and t.numel() > 0 and not torch.isfinite(t).all():
                     raise RuntimeError(f"nan_debug: non-finite in {name}")
             if not torch.isfinite(loss):
                 raise RuntimeError("nan_debug: non-finite loss")
 
-        self.log("train_loss", loss, on_step=True, on_epoch=True, batch_size=batch_size, prog_bar=True)
+        self.log(
+            "train_loss", loss, on_step=True, on_epoch=True, batch_size=batch_size, prog_bar=True
+        )
         return loss
 
     def validation_step(self, batch: MulticomponentTrainingBatch, batch_idx: int) -> Tensor:
@@ -109,15 +120,28 @@ class ArrheniusMetricsHooksMixin:
             lnk_dict_raw = {"for": (lnKf_raw_p, lnKf_raw_t), "rev": (lnKr_raw_p, lnKr_raw_t)}
         else:
             device = Zf.device
-            empty = {"for": (torch.empty(0, device=device), torch.empty(0, device=device)),
-                     "rev": (torch.empty(0, device=device), torch.empty(0, device=device))}
+            empty = {
+                "for": (torch.empty(0, device=device), torch.empty(0, device=device)),
+                "rev": (torch.empty(0, device=device), torch.empty(0, device=device)),
+            }
             lnk_dict_std = lnk_dict_raw = empty
 
         val_loss = 0.5 * (
-            self._loss_triplet(Yf_pred_s, Yf_true_s, lnk_dict_std["for"][0], lnk_dict_std["for"][1], weights)
-            + self._loss_triplet(Yr_pred_s, Yr_true_s, lnk_dict_std["rev"][0], lnk_dict_std["rev"][1], weights)
+            self._loss_triplet(
+                Yf_pred_s, Yf_true_s, lnk_dict_std["for"][0], lnk_dict_std["for"][1], weights
+            )
+            + self._loss_triplet(
+                Yr_pred_s, Yr_true_s, lnk_dict_std["rev"][0], lnk_dict_std["rev"][1], weights
+            )
         )
-        self.log("val_loss", val_loss, on_step=False, on_epoch=True, batch_size=self.get_batch_size(batch), prog_bar=True)
+        self.log(
+            "val_loss",
+            val_loss,
+            on_step=False,
+            on_epoch=True,
+            batch_size=self.get_batch_size(batch),
+            prog_bar=True,
+        )
 
         self.metrics.update_batch(
             split="val",
@@ -161,15 +185,28 @@ class ArrheniusMetricsHooksMixin:
             lnk_dict_raw = {"for": (lnKf_raw_p, lnKf_raw_t), "rev": (lnKr_raw_p, lnKr_raw_t)}
         else:
             device = Zf.device
-            empty = {"for": (torch.empty(0, device=device), torch.empty(0, device=device)),
-                     "rev": (torch.empty(0, device=device), torch.empty(0, device=device))}
+            empty = {
+                "for": (torch.empty(0, device=device), torch.empty(0, device=device)),
+                "rev": (torch.empty(0, device=device), torch.empty(0, device=device)),
+            }
             lnk_dict_std = lnk_dict_raw = empty
 
         test_loss = 0.5 * (
-            self._loss_triplet(Yf_pred_s, Yf_true_s, lnk_dict_std["for"][0], lnk_dict_std["for"][1], weights)
-            + self._loss_triplet(Yr_pred_s, Yr_true_s, lnk_dict_std["rev"][0], lnk_dict_std["rev"][1], weights)
+            self._loss_triplet(
+                Yf_pred_s, Yf_true_s, lnk_dict_std["for"][0], lnk_dict_std["for"][1], weights
+            )
+            + self._loss_triplet(
+                Yr_pred_s, Yr_true_s, lnk_dict_std["rev"][0], lnk_dict_std["rev"][1], weights
+            )
         )
-        self.log("test_loss", test_loss, on_step=False, on_epoch=True, batch_size=self.get_batch_size(batch), prog_bar=True)
+        self.log(
+            "test_loss",
+            test_loss,
+            on_step=False,
+            on_epoch=True,
+            batch_size=self.get_batch_size(batch),
+            prog_bar=True,
+        )
 
         self.metrics.update_batch(
             split="test",
@@ -188,10 +225,7 @@ class ArrheniusMetricsHooksMixin:
         self.metrics_raw.log_and_reset(self, split="test")
 
     def predict_step(
-        self,
-        batch: MulticomponentTrainingBatch,
-        batch_idx: int,
-        dataloader_idx: int = 0,
+        self, batch: MulticomponentTrainingBatch, batch_idx: int, dataloader_idx: int = 0
     ) -> PredictBatchOutput:
         bmgs, V_ds, X_d, targets, *rest = batch
         _ = rest

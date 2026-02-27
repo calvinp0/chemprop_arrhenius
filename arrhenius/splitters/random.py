@@ -57,7 +57,7 @@ def _compute_split_counts(n_groups: int, sizes: Tuple[float, float, float]) -> T
     elif remainder < 0:
         frac_part = raw - base
         order = np.argsort(frac_part)
-        for idx in order[: -remainder]:
+        for idx in order[:-remainder]:
             base[idx] -= 1
 
     base = np.clip(base, 0, None)

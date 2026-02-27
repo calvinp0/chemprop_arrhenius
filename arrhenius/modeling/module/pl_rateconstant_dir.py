@@ -126,13 +126,21 @@ class ArrheniusMultiComponentMPNN(
             "scale_rev": arrhenius_layer_scale_rev,
         }
 
-        has_scalers_for = (arrhenius_layer_mean_for is not None) and (arrhenius_layer_scale_for is not None)
-        has_scalers_rev = (arrhenius_layer_mean_rev is not None) and (arrhenius_layer_scale_rev is not None)
+        has_scalers_for = (arrhenius_layer_mean_for is not None) and (
+            arrhenius_layer_scale_for is not None
+        )
+        has_scalers_rev = (arrhenius_layer_mean_rev is not None) and (
+            arrhenius_layer_scale_rev is not None
+        )
         has_scalers = has_scalers_for and has_scalers_rev
         if self.enable_arrhenius_layer and not has_scalers:
-            raise ValueError("Arrhenius layer enabled but mean/scale tensors were not provided (both directions).")
+            raise ValueError(
+                "Arrhenius layer enabled but mean/scale tensors were not provided (both directions)."
+            )
         if not self.enable_arrhenius_layer and has_scalers:
-            logger.warning("Arrhenius scalers were provided but the layer is disabled. They will be ignored.")
+            logger.warning(
+                "Arrhenius scalers were provided but the layer is disabled. They will be ignored."
+            )
         if arrhenius_layer_mean_for is not None and len(arrhenius_layer_mean_for) != len(temps):
             raise ValueError("arrhenius_layer_mean_for must match temps length.")
         if arrhenius_layer_scale_for is not None and len(arrhenius_layer_scale_for) != len(temps):
@@ -144,7 +152,9 @@ class ArrheniusMultiComponentMPNN(
         self.A_log_10scaled = A_log_10scaled
         self.huber_delta = float(huber_delta)
         self.nan_debug = bool(nan_debug)
-        self.X_d_transform = torch.nn.Identity() if (X_d_transform is None and d_x > 0) else X_d_transform
+        self.X_d_transform = (
+            torch.nn.Identity() if (X_d_transform is None and d_x > 0) else X_d_transform
+        )
 
         self.message_passing = message_passing
         self.agg = agg
@@ -213,7 +223,9 @@ class ArrheniusMultiComponentMPNN(
 
         self.strat_temp_num_bins = strat_temp_num_bins
         self.strat_temp_samples_per_bin = strat_temp_samples_per_bin
-        self.stratify_temp = bool(self.enable_arrhenius_layer and strat_temp_num_bins and strat_temp_samples_per_bin)
+        self.stratify_temp = bool(
+            self.enable_arrhenius_layer and strat_temp_num_bins and strat_temp_samples_per_bin
+        )
 
         if self.enable_arrhenius_layer:
             self.arrhenius_layer_fwd = ArrheniusLayer(

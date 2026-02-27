@@ -4,10 +4,15 @@ from typing import Optional
 import json, sqlite3, time, zlib, math, hashlib
 from contextlib import contextmanager
 
-def _json(x): return json.dumps(x, separators=(",", ":"), ensure_ascii=False)
+
+def _json(x):
+    return json.dumps(x, separators=(",", ":"), ensure_ascii=False)
+
+
 def _hash_cfg(cfg: dict, split_sig: str) -> str:
     s = _json(cfg) + "|" + str(split_sig)
     return hashlib.sha1(s.encode("utf-8")).hexdigest()
+
 
 @contextmanager
 def _conn(db_path):
@@ -19,6 +24,7 @@ def _conn(db_path):
         conn.commit()
     finally:
         conn.close()
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS trials(
@@ -102,24 +108,38 @@ CREATE TABLE IF NOT EXISTS predictions (
 );
 """
 
+
 def _summarize_vec(v):
-    if v is None: return None
+    if v is None:
+        return None
     try:
         n = len(v)
-        if n == 0: return {"n": 0}
+        if n == 0:
+            return {"n": 0}
         s = float(sum(v))
         m = s / n
-        var = sum((x - m)*(x - m) for x in v) / n
-        return {"n": n, "mean": m, "std": math.sqrt(var), "min": float(min(v)), "max": float(max(v))}
+        var = sum((x - m) * (x - m) for x in v) / n
+        return {
+            "n": n,
+            "mean": m,
+            "std": math.sqrt(var),
+            "min": float(min(v)),
+            "max": float(max(v)),
+        }
     except Exception:
         return None
 
+
 def _maybe_vec(x):
     # return Python list[float] if attribute exists, else None
-    if x is None: return None
-    if hasattr(x, "tolist"): return x.tolist()
-    if isinstance(x, (list, tuple)): return list(map(float, x))
+    if x is None:
+        return None
+    if hasattr(x, "tolist"):
+        return x.tolist()
+    if isinstance(x, (list, tuple)):
+        return list(map(float, x))
     return None
+
 
 def _extract_scaler_params(scaler, which: str):
     """
@@ -139,49 +159,79 @@ def _extract_scaler_params(scaler, which: str):
     # sklearn ColumnTransformer (for y)
     if hasattr(scaler, "named_transformers_"):
         for comp, tr in scaler.named_transformers_.items():
-            if hasattr(tr, "mean_"):    pack(comp, "mean",    tr.mean_)
-            if hasattr(tr, "scale_"):   pack(comp, "scale",   tr.scale_)
-            if hasattr(tr, "var_"):     pack(comp, "var",     tr.var_)
-            if hasattr(tr, "lambdas_"): pack(comp, "lambdas", tr.lambdas_)
+            if hasattr(tr, "mean_"):
+                pack(comp, "mean", tr.mean_)
+            if hasattr(tr, "scale_"):
+                pack(comp, "scale", tr.scale_)
+            if hasattr(tr, "var_"):
+                pack(comp, "var", tr.var_)
+            if hasattr(tr, "lambdas_"):
+                pack(comp, "lambdas", tr.lambdas_)
             # PowerTransformer stores lambdas_; QuantileTransformer has quantiles_; RobustScaler has center_/scale_
-            if hasattr(tr, "center_"):  pack(comp, "center",  tr.center_)
-            if hasattr(tr, "quantiles_"): pack(comp, "quantiles", tr.quantiles_)
+            if hasattr(tr, "center_"):
+                pack(comp, "center", tr.center_)
+            if hasattr(tr, "quantiles_"):
+                pack(comp, "quantiles", tr.quantiles_)
     else:
         comp = getattr(scaler, "__class__", type("X", (), {})).__name__
-        if hasattr(scaler, "mean_"):    pack(comp, "mean",    scaler.mean_)
-        if hasattr(scaler, "scale_"):   pack(comp, "scale",   scaler.scale_)
-        if hasattr(scaler, "var_"):     pack(comp, "var",     scaler.var_)
-        if hasattr(scaler, "lambdas_"): pack(comp, "lambdas", scaler.lambdas_)
-        if hasattr(scaler, "center_"):  pack(comp, "center",  scaler.center_)
-        if hasattr(scaler, "quantiles_"): pack(comp, "quantiles", scaler.quantiles_)
+        if hasattr(scaler, "mean_"):
+            pack(comp, "mean", scaler.mean_)
+        if hasattr(scaler, "scale_"):
+            pack(comp, "scale", scaler.scale_)
+        if hasattr(scaler, "var_"):
+            pack(comp, "var", scaler.var_)
+        if hasattr(scaler, "lambdas_"):
+            pack(comp, "lambdas", scaler.lambdas_)
+        if hasattr(scaler, "center_"):
+            pack(comp, "center", scaler.center_)
+        if hasattr(scaler, "quantiles_"):
+            pack(comp, "quantiles", scaler.quantiles_)
     return rows
+
 
 class TrialLogger:
     def __init__(self, db_path: str, study_name: str, save_raw_scalers: bool = False):
         self.db, self.study_name, self.save_raw = db_path, study_name, save_raw_scalers
         with _conn(self.db) as c:
             c.executescript(SCHEMA)
-        
 
     def start_trial(self, trial_id: int, cfg: dict, split_sig: str):
         with _conn(self.db) as c:
-            c.execute("""INSERT OR REPLACE INTO trials
+            c.execute(
+                """INSERT OR REPLACE INTO trials
               (trial_id, study_name, cfg_json, cfg_hash, split_sig, status, started_ts, ended_ts)
               VALUES (?,?,?,?,?,?,?, COALESCE((SELECT ended_ts FROM trials WHERE trial_id=? AND study_name=?), NULL))""",
-              (trial_id, self.study_name, _json(cfg), _hash_cfg(cfg, split_sig), split_sig, "running", time.time(), trial_id, self.study_name))
+                (
+                    trial_id,
+                    self.study_name,
+                    _json(cfg),
+                    _hash_cfg(cfg, split_sig),
+                    split_sig,
+                    "running",
+                    time.time(),
+                    trial_id,
+                    self.study_name,
+                ),
+            )
 
     def end_trial(self, trial_id: int, status: str):
         with _conn(self.db) as c:
-            c.execute("UPDATE trials SET status=?, ended_ts=? WHERE trial_id=? AND study_name=?",
-                      (status, time.time(), trial_id, self.study_name))
+            c.execute(
+                "UPDATE trials SET status=?, ended_ts=? WHERE trial_id=? AND study_name=?",
+                (status, time.time(), trial_id, self.study_name),
+            )
 
     def log_fold_metrics(self, trial_id: int, fold_id: int, metrics: dict):
         rows = [(trial_id, self.study_name, fold_id, k, float(v)) for k, v in metrics.items()]
         with _conn(self.db) as c:
-            c.executemany("INSERT OR REPLACE INTO folds(trial_id,study_name,fold_id,metric,value) VALUES(?,?,?,?,?)", rows)
+            c.executemany(
+                "INSERT OR REPLACE INTO folds(trial_id,study_name,fold_id,metric,value) VALUES(?,?,?,?,?)",
+                rows,
+            )
 
     def log_seed(self, trial_id: int, fold_id: Optional[int], seed_dict: dict):
         import json
+
         with _conn(self.db) as c:
             c.execute(
                 "INSERT OR REPLACE INTO trial_seeds(trial_id, fold_id, seed_json) VALUES (?,?,?)",
@@ -192,23 +242,46 @@ class TrialLogger:
         store_raw = self.save_raw or which == "y"
         for comp, param, summ, raw in _extract_scaler_params(scaler, which):
             with _conn(self.db) as c:
-                c.execute("""INSERT OR REPLACE INTO scalers
+                c.execute(
+                    """INSERT OR REPLACE INTO scalers
                   (trial_id,study_name,fold_id,which,component,param,summary,raw)
                   VALUES (?,?,?,?,?,?,?,?)""",
-                  (trial_id, self.study_name, fold_id, which, comp, param, _json(summ) if summ else None,
-                   raw if (store_raw and raw is not None) else None))
+                    (
+                        trial_id,
+                        self.study_name,
+                        fold_id,
+                        which,
+                        comp,
+                        param,
+                        _json(summ) if summ else None,
+                        raw if (store_raw and raw is not None) else None,
+                    ),
+                )
 
     def log_split_indices(self, trial_id: int, fold_id: int, **splits_arrays):
         rows = []
         for name, arr in splits_arrays.items():
-            if arr is None: continue
-            if hasattr(arr, "tolist"): arr = arr.tolist()
+            if arr is None:
+                continue
+            if hasattr(arr, "tolist"):
+                arr = arr.tolist()
             rows.append((trial_id, self.study_name, fold_id, name, _json(list(map(int, arr)))))
         if rows:
             with _conn(self.db) as c:
-                c.executemany("INSERT OR REPLACE INTO splits(trial_id,study_name,fold_id,split_name,idx_json) VALUES(?,?,?,?,?)", rows)
+                c.executemany(
+                    "INSERT OR REPLACE INTO splits(trial_id,study_name,fold_id,split_name,idx_json) VALUES(?,?,?,?,?)",
+                    rows,
+                )
 
-    def log_predictions(self, trial_id: int, fold_id: int, replicate: int, split_name: str, sample_indices, payloads: dict):
+    def log_predictions(
+        self,
+        trial_id: int,
+        fold_id: int,
+        replicate: int,
+        split_name: str,
+        sample_indices,
+        payloads: dict,
+    ):
         """
         Store per-sample predictions (scaled and unscaled) for a split.
         payloads keys mirror _stack_prediction_outputs: y_pred_raw, y_true_raw, y_pred_s, y_true_s, lnk_pred, lnk_true, temps.
@@ -232,7 +305,17 @@ class TrialLogger:
                 "lnk_true": _row(payloads.get("lnk_true"), pos),
                 "temps": temps,
             }
-            rows.append((trial_id, self.study_name, fold_id, int(replicate), split_name, int(idx), _json(entry)))
+            rows.append(
+                (
+                    trial_id,
+                    self.study_name,
+                    fold_id,
+                    int(replicate),
+                    split_name,
+                    int(idx),
+                    _json(entry),
+                )
+            )
 
         if rows:
             with _conn(self.db) as c:
@@ -245,19 +328,26 @@ class TrialLogger:
     def aggregate_and_store(self, trial_id: int):
         # compute mean/std/min/max/count per metric over folds and store into metrics_agg
         with _conn(self.db) as c:
-            cur = c.execute("""SELECT metric, value FROM folds WHERE trial_id=? AND study_name=? ORDER BY metric""",
-                            (trial_id, self.study_name))
+            cur = c.execute(
+                """SELECT metric, value FROM folds WHERE trial_id=? AND study_name=? ORDER BY metric""",
+                (trial_id, self.study_name),
+            )
             by_metric = {}
             for m, v in cur.fetchall():
                 by_metric.setdefault(m, []).append(float(v))
             rows = []
             for m, vals in by_metric.items():
                 n = len(vals)
-                mu = sum(vals)/n
-                var = sum((x-mu)*(x-mu) for x in vals)/n
-                rows.append((trial_id, self.study_name, m, mu, math.sqrt(var), min(vals), max(vals), n))
-            c.executemany("""INSERT OR REPLACE INTO metrics_agg
-              (trial_id,study_name,metric,mean,std,min,max,count) VALUES (?,?,?,?,?,?,?,?)""", rows)
+                mu = sum(vals) / n
+                var = sum((x - mu) * (x - mu) for x in vals) / n
+                rows.append(
+                    (trial_id, self.study_name, m, mu, math.sqrt(var), min(vals), max(vals), n)
+                )
+            c.executemany(
+                """INSERT OR REPLACE INTO metrics_agg
+              (trial_id,study_name,metric,mean,std,min,max,count) VALUES (?,?,?,?,?,?,?,?)""",
+                rows,
+            )
 
     def store_summary(self, tag: str, payload: dict):
         with _conn(self.db) as c:
@@ -268,10 +358,7 @@ class TrialLogger:
 
 
 def fetch_split_indices(
-    db_path: str,
-    study_name: str,
-    trial_id: int,
-    fold_id: Optional[int] = None,
+    db_path: str, study_name: str, trial_id: int, fold_id: Optional[int] = None
 ) -> dict:
     """
     Return stored split indices for a given trial and optional fold.
@@ -298,10 +385,7 @@ def fetch_split_indices(
 
 
 def fetch_trial_seeds(
-    db_path: str,
-    study_name: str,
-    trial_id: int,
-    fold_id: Optional[int] = None,
+    db_path: str, study_name: str, trial_id: int, fold_id: Optional[int] = None
 ) -> dict:
     """
     Fetch stored seed metadata for the given trial.

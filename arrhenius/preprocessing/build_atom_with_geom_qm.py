@@ -41,7 +41,9 @@ def _collect_sdf_atom_symbols(sdf_file: Path, rxn_id: str) -> Dict[str, List[str
     return out
 
 
-def _validate_qm_symbols(qm_df: pd.DataFrame, sdf_symbols: List[str], rxn_id: str, mol_type: str) -> List[tuple]:
+def _validate_qm_symbols(
+    qm_df: pd.DataFrame, sdf_symbols: List[str], rxn_id: str, mol_type: str
+) -> List[tuple]:
     if len(qm_df) != len(sdf_symbols):
         raise ValueError(
             f"Atom count mismatch for {rxn_id}/{mol_type}: "
@@ -70,10 +72,7 @@ def _kabsch_align(P: np.ndarray, Q: np.ndarray) -> np.ndarray:
 
 
 def _greedy_symbolwise_assignment(
-    log_xyz: np.ndarray,
-    sdf_xyz: np.ndarray,
-    log_syms: List[str],
-    sdf_syms: List[str],
+    log_xyz: np.ndarray, sdf_xyz: np.ndarray, log_syms: List[str], sdf_syms: List[str]
 ) -> Dict[int, int]:
     mapping: Dict[int, int] = {}
     symbols = sorted(set(log_syms))
@@ -81,7 +80,9 @@ def _greedy_symbolwise_assignment(
         log_idx = [i for i, s in enumerate(log_syms) if s == sym]
         sdf_idx = [i for i, s in enumerate(sdf_syms) if s == sym]
         if len(log_idx) != len(sdf_idx):
-            raise ValueError(f"Cannot map symbol '{sym}': counts differ ({len(log_idx)} vs {len(sdf_idx)})")
+            raise ValueError(
+                f"Cannot map symbol '{sym}': counts differ ({len(log_idx)} vs {len(sdf_idx)})"
+            )
 
         # Greedy unique matching by distance.
         used_log = set()
@@ -104,7 +105,9 @@ def _greedy_symbolwise_assignment(
     return mapping
 
 
-def _remap_qm_to_sdf(qm_df: pd.DataFrame, sdf_symbols: List[str], sdf_xyz: np.ndarray) -> pd.DataFrame:
+def _remap_qm_to_sdf(
+    qm_df: pd.DataFrame, sdf_symbols: List[str], sdf_xyz: np.ndarray
+) -> pd.DataFrame:
     req = ["x", "y", "z"]
     if any(c not in qm_df.columns for c in req):
         raise ValueError("QM dataframe missing coordinates; remap is unavailable.")
@@ -150,16 +153,32 @@ def _build_qm_table(manifest: pd.DataFrame, atom_map_mode: str = "strict") -> pd
             if rid != rxn_id or mtype not in ("r1h", "r2h"):
                 continue
             conf = mol.GetConformer()
-            xyz = np.array([[conf.GetAtomPosition(i).x, conf.GetAtomPosition(i).y, conf.GetAtomPosition(i).z] for i in range(mol.GetNumAtoms())], dtype=float)
+            xyz = np.array(
+                [
+                    [
+                        conf.GetAtomPosition(i).x,
+                        conf.GetAtomPosition(i).y,
+                        conf.GetAtomPosition(i).z,
+                    ]
+                    for i in range(mol.GetNumAtoms())
+                ],
+                dtype=float,
+            )
             sdf_coords[mtype] = xyz
 
         for mol_type, log_path in (("r1h", r1h_log), ("r2h", r2h_log)):
-            qm = parse_gaussian_qm(str(log_path)).sort_values("focus_atom_idx").reset_index(drop=True)
+            qm = (
+                parse_gaussian_qm(str(log_path))
+                .sort_values("focus_atom_idx")
+                .reset_index(drop=True)
+            )
             mismatches = _validate_qm_symbols(qm, symbols[mol_type], rxn_id, mol_type)
             if mismatches:
                 if atom_map_mode == "strict":
                     ex = mismatches[:5]
-                    raise ValueError(f"Atom symbol mismatch for {rxn_id}/{mol_type}, examples: {ex}")
+                    raise ValueError(
+                        f"Atom symbol mismatch for {rxn_id}/{mol_type}, examples: {ex}"
+                    )
                 qm = _remap_qm_to_sdf(qm, symbols[mol_type], sdf_coords[mol_type])
                 # confirm after remap
                 post = _validate_qm_symbols(qm, symbols[mol_type], rxn_id, mol_type)
@@ -209,7 +228,9 @@ def _run_create_rad(create_rad_py: Path, sdf_files: List[Path], output_dir: Path
 
 def _merge_rad_qm(rad_csv: Path, qm_df: pd.DataFrame, out_csv: Path):
     rad = pd.read_csv(rad_csv)
-    merged = rad.merge(qm_df, on=["rxn_id", "mol_type", "focus_atom_idx"], how="left", validate="many_to_one")
+    merged = rad.merge(
+        qm_df, on=["rxn_id", "mol_type", "focus_atom_idx"], how="left", validate="many_to_one"
+    )
     merged.to_csv(out_csv, index=False)
     return {
         "rad_rows": int(len(rad)),
@@ -221,14 +242,22 @@ def _merge_rad_qm(rad_csv: Path, qm_df: pd.DataFrame, out_csv: Path):
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(description="Build atom_with_geom_feats CSVs from SDF + Gaussian freq logs.")
-    p.add_argument("--manifest-csv", required=True, help="CSV with columns: rxn_id,sdf_file,r1h_log,r2h_log")
+    p = argparse.ArgumentParser(
+        description="Build atom_with_geom_feats CSVs from SDF + Gaussian freq logs."
+    )
+    p.add_argument(
+        "--manifest-csv", required=True, help="CSV with columns: rxn_id,sdf_file,r1h_log,r2h_log"
+    )
     p.add_argument(
         "--create-rad-py",
         default=str((Path(__file__).resolve().parent / "create_RAD.py")),
         help="Path to create_RAD.py script used for RAD/geometry features.",
     )
-    p.add_argument("--output-dir", required=True, help="Output directory for geom and merged atom feature CSVs.")
+    p.add_argument(
+        "--output-dir",
+        required=True,
+        help="Output directory for geom and merged atom feature CSVs.",
+    )
     p.add_argument(
         "--atom-map-mode",
         choices=["strict", "remap"],
@@ -287,10 +316,7 @@ def main() -> int:
             "atom_with_geom_feats_rad": str(out_rad),
             "atom_with_geom_feats_path": str(out_path),
         },
-        "merge_stats": {
-            "rad": stats_rad,
-            "path": stats_path,
-        },
+        "merge_stats": {"rad": stats_rad, "path": stats_path},
     }
     with open(output_dir / "qm_merge_report.json", "w") as f:
         json.dump(report, f, indent=2)

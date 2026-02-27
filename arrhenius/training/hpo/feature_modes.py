@@ -25,14 +25,7 @@ BASE_COLS_NO_Q = [
     "is_donor_neighbor",
 ]
 
-RAD_EXTRA_COLS = [
-    "r_exist",
-    "a_exist",
-    "d_exist",
-    "angle",
-    "dihedral",
-    "radius",
-]
+RAD_EXTRA_COLS = ["r_exist", "a_exist", "d_exist", "angle", "dihedral", "radius"]
 
 RAD_COLS = BASE_COLS + RAD_EXTRA_COLS
 RAD_COLS_NO_Q = BASE_COLS_NO_Q + RAD_EXTRA_COLS
@@ -44,11 +37,7 @@ RADIUS_COL = "radius"
 RBF_D_COUNT = 16
 RAD_MASK_HOPS = 4
 
-EXTRA_MODE_ALIASES = {
-    "none": "baseline",
-    "path": "rad",
-    "default": "rad",
-}
+EXTRA_MODE_ALIASES = {"none": "baseline", "path": "rad", "default": "rad"}
 
 
 def canonicalize_extra_mode(mode: str) -> str:
@@ -58,17 +47,13 @@ def canonicalize_extra_mode(mode: str) -> str:
 
 def canonicalize_global_mode(mode: str) -> str:
     raw = str(mode).strip().lower().replace("-", "_")
-    aliases = {
-        "rdkit2d": "rdkit2d_norm",
-    }
+    aliases = {"rdkit2d": "rdkit2d_norm"}
     return aliases.get(raw, raw)
 
 
 def canonicalize_rad_source(value: str) -> str:
     raw = str(value).strip().lower().replace("-", "_")
-    aliases = {
-        "default": "rad",
-    }
+    aliases = {"default": "rad"}
     out = aliases.get(raw, raw)
     if out not in {"path", "rad"}:
         raise ValueError(f"Unknown rad_source '{value}' (expected 'path' or 'rad').")
@@ -81,7 +66,7 @@ def atom_extra_dim(cols: list[str], rad_mode: bool) -> int:
         return base
     add = 0
     if RADIUS_COL in cols:
-        add += (RBF_D_COUNT - 1)
+        add += RBF_D_COUNT - 1
     if ANGLE_COL in cols:
         add += 1
     if DIHEDRAL_COL in cols:

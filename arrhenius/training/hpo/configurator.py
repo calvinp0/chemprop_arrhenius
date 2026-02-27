@@ -10,7 +10,9 @@ from arrhenius.training.hpo.temps import build_temps
 from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 
 
-def compose_base_config(args, base_cfg: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any] | None]:
+def compose_base_config(
+    args, base_cfg: Dict[str, Any]
+) -> Tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any] | None]:
     """
     Build the non-HPO scaffolding once:
       defaults -> CLI modes (extras/global) -> Arrhenius toggles.
@@ -26,7 +28,9 @@ def compose_base_config(args, base_cfg: Dict[str, Any]) -> Tuple[Dict[str, Any],
     return cfg1, pruned_space, chosen_family
 
 
-def finalize_cfg(cfg: Dict[str, Any], args, yaml_space: Dict[str, Any], include_temps: bool = True) -> Dict[str, Any]:
+def finalize_cfg(
+    cfg: Dict[str, Any], args, yaml_space: Dict[str, Any], include_temps: bool = True
+) -> Dict[str, Any]:
     """
     Normalize hardware/split/precision flags and optionally inject temperatures.
     This is used both during HPO and when replaying a stored cfg.
@@ -38,10 +42,18 @@ def finalize_cfg(cfg: Dict[str, Any], args, yaml_space: Dict[str, Any], include_
     cfg["accelerator"] = getattr(args, "accelerator", cfg.get("accelerator", "auto"))
     cfg["devices"] = getattr(args, "devices", cfg.get("devices", 1))
     cfg["splitter"] = getattr(args, "splitter", cfg.get("splitter", "kstone"))
-    cfg["enable_arrhenius_layer"] = cfg.get("enable_arrhenius_layer", getattr(args, "enable_arrhenius_layer", True))
-    cfg["use_arrhenius_supervision"] = cfg.get("use_arrhenius_supervision", getattr(args, "use_arrhenius_supervision", True))
-    cfg["extra_mode"] = canonicalize_extra_mode(cfg.get("extra_mode", getattr(args, "extra_mode", "baseline")))
-    cfg["global_mode"] = canonicalize_global_mode(cfg.get("global_mode", getattr(args, "global_mode", "none")))
+    cfg["enable_arrhenius_layer"] = cfg.get(
+        "enable_arrhenius_layer", getattr(args, "enable_arrhenius_layer", True)
+    )
+    cfg["use_arrhenius_supervision"] = cfg.get(
+        "use_arrhenius_supervision", getattr(args, "use_arrhenius_supervision", True)
+    )
+    cfg["extra_mode"] = canonicalize_extra_mode(
+        cfg.get("extra_mode", getattr(args, "extra_mode", "baseline"))
+    )
+    cfg["global_mode"] = canonicalize_global_mode(
+        cfg.get("global_mode", getattr(args, "global_mode", "none"))
+    )
 
     precision_override = getattr(args, "precision", None)
     if precision_override is not None:

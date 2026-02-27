@@ -15,7 +15,11 @@ from pathlib import Path
 from arrhenius.training.hpo.configurator import finalize_cfg
 from arrhenius.training.hpo.data import prepare_data
 from arrhenius.training.hpo.defaults import config_defaults
-from arrhenius.training.hpo.splits import build_outer_splits, build_locked_holdout_split, splits_signature
+from arrhenius.training.hpo.splits import (
+    build_outer_splits,
+    build_locked_holdout_split,
+    splits_signature,
+)
 from arrhenius.training.hpo.hpo_objective import objective_factory
 from arrhenius.training.hpo.evaluation import (
     evaluate_trial_on_fold,
@@ -25,7 +29,12 @@ from arrhenius.training.hpo.evaluation import (
 )
 from arrhenius.training.hpo.database_configs import TrialLogger
 from arrhenius.training.hpo.loader_cache import LoaderCache
-from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, canonicalize_rad_source, mode_settings
+from arrhenius.training.hpo.feature_modes import (
+    canonicalize_extra_mode,
+    canonicalize_global_mode,
+    canonicalize_rad_source,
+    mode_settings,
+)
 from arrhenius.training.hpo.space import load_search_space
 from arrhenius.training.hpo.validate_data import main as validate_data_main
 
@@ -55,11 +64,13 @@ def set_all_seeds(seed: int, deterministic: bool = True):
         except Exception:
             pass  # older torch
 
+
 def seed_worker(worker_id: int):
     """Deterministic seeding for DataLoader workers."""
     worker_seed = torch.initial_seed() % 2**32
     np.random.seed(worker_seed)
     random.seed(worker_seed)
+
 
 def torch_generator(seed: int) -> torch.Generator:
     g = torch.Generator()
@@ -69,6 +80,7 @@ def torch_generator(seed: int) -> torch.Generator:
 
 def _sqlite_path_from_url(url: str) -> str:
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
     path = parsed.path or ""
     # Absolute path form: sqlite:////abs/path.db -> parsed.path == //abs/path.db
@@ -126,6 +138,7 @@ def _rank_score(cv_metrics: dict, rank_metric: str) -> tuple[str, float]:
         return first, float(val_mean[first])
     return "cv_mean_fallback", float(cv_metrics.get("mean", float("inf")))
 
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "validate-data":
         raise SystemExit(validate_data_main(sys.argv[2:]))
@@ -169,7 +182,7 @@ def main():
     mode_cfg = mode_settings(args.extra_mode)
     bundle = prepare_data(
         sdf_path=sdf_path,
-        target_csv=target_csv,                 # already log10(A) etc.
+        target_csv=target_csv,  # already log10(A) etc.
         extras_mode=args.extra_mode,
         global_mode=args.global_mode,
         morgan_bits=getattr(args, "morgan_bits", 2048),
@@ -245,7 +258,9 @@ def main():
     metrics_dir = os.path.dirname(metrics_db_path)
     if metrics_dir:
         os.makedirs(metrics_dir, exist_ok=True)
-    hpo_logger = TrialLogger(metrics_db_path, study_name, save_raw_scalers=bool(getattr(args, "save_raw_scalers", False)))
+    hpo_logger = TrialLogger(
+        metrics_db_path, study_name, save_raw_scalers=bool(getattr(args, "save_raw_scalers", False))
+    )
 
     final_db_base = getattr(args, "final_metrics_db", "final_metrics.sqlite")
     final_db_path = os.path.abspath(_tagged_db_path(final_db_base, tag))
@@ -253,7 +268,11 @@ def main():
     if final_dir:
         os.makedirs(final_dir, exist_ok=True)
     final_study_name = getattr(args, "final_study_name", f"{study_name}_final")
-    final_logger = TrialLogger(final_db_path, final_study_name, save_raw_scalers=bool(getattr(args, "save_raw_scalers", False)))
+    final_logger = TrialLogger(
+        final_db_path,
+        final_study_name,
+        save_raw_scalers=bool(getattr(args, "save_raw_scalers", False)),
+    )
     loader_cache = LoaderCache(bundle)
 
     if "timeout=" not in storage_url:
@@ -280,17 +299,23 @@ def main():
         )
 
     # === 4) Define train_eval_fn that reuses your inner loop ===
-    def train_eval_fn(cfg: dict, outer, trial, logger, bundle=bundle, loader_cache=loader_cache) -> float:
+    def train_eval_fn(
+        cfg: dict, outer, trial, logger, bundle=bundle, loader_cache=loader_cache
+    ) -> float:
         logger.start_trial(trial.number, cfg, splits_sig)
         logger.log_seed(trial.number, None, {"base": cfg.get("seed", 42)})
         vals = []
         try:
             for f_id, (dev_idx, holdout_idx) in enumerate(outer):
-                logger.log_seed(trial.number, f_id, {
-                    "base": cfg.get("seed", 42),
-                    "loader_train": cfg.get("seed", 42) + 11,
-                    "loader_val":   cfg.get("seed", 42) + 13
-                })
+                logger.log_seed(
+                    trial.number,
+                    f_id,
+                    {
+                        "base": cfg.get("seed", 42),
+                        "loader_train": cfg.get("seed", 42) + 11,
+                        "loader_val": cfg.get("seed", 42) + 13,
+                    },
+                )
                 logger.log_split_indices(
                     trial.number,
                     f_id,
@@ -322,7 +347,6 @@ def main():
                 if trial.should_prune():
                     raise optuna.TrialPruned()
 
-
             logger.aggregate_and_store(trial.number)
             logger.end_trial(trial.number, "complete")
             return float(np.mean(vals))
@@ -335,17 +359,16 @@ def main():
             logger.end_trial(trial.number, "failed")
             raise
 
-
     # === 5) Build the objective and run ===
     objective = objective_factory(
-        base_cfg={},                  # keep empty, defaults fill in
+        base_cfg={},  # keep empty, defaults fill in
         args=args,
         outer_splits=outer_splits,
         train_eval_fn=train_eval_fn,
         study=study,
         split_signature=splits_sig,
         logger=hpo_logger,
-        bundle=bundle
+        bundle=bundle,
     )
 
     n_trials = int(getattr(args, "hpo_trials", 0))
@@ -361,7 +384,8 @@ def main():
         return
 
     complete_trials = [
-        t for t in study.get_trials(deepcopy=True)
+        t
+        for t in study.get_trials(deepcopy=True)
         if t.state == optuna.trial.TrialState.COMPLETE and t.value is not None
     ]
     if not complete_trials:
@@ -412,10 +436,7 @@ def main():
         return
     gkf10 = GroupKFold(n_splits=n_splits)
     outer10 = [
-        (
-            [train_pool_idx[int(i)] for i in tr_idx],
-            [train_pool_idx[int(i)] for i in te_idx],
-        )
+        ([train_pool_idx[int(i)] for i in tr_idx], [train_pool_idx[int(i)] for i in te_idx])
         for tr_idx, te_idx in gkf10.split(np.arange(n_total), groups=pool_group_keys)
     ]
     if not outer10:
@@ -574,6 +595,7 @@ def main():
     print(f"[POST] Final summary written to {summary_path}")
     final_logger.store_summary("final_summary", summary_payload)
     print(f"[POST] Final-stage artefacts logged to {final_db_path} (trial_id {final_trial_id}).")
+
 
 if __name__ == "__main__":
     main()

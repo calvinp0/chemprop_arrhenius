@@ -63,7 +63,9 @@ class ArrheniusModelCoreMixin:
         sum_h.index_add_(0, batch, H_v * w.unsqueeze(-1))
         return sum_h / sum_w.clamp_min(1).unsqueeze(-1)
 
-    def fingerprints_two_orders(self, bmgs, V_ds, X_d: Tensor | None = None) -> tuple[Tensor, Tensor]:
+    def fingerprints_two_orders(
+        self, bmgs, V_ds, X_d: Tensor | None = None
+    ) -> tuple[Tensor, Tensor]:
         H_vs = self.message_passing(bmgs, V_ds)
 
         Hs = []
@@ -117,7 +119,9 @@ class ArrheniusModelCoreMixin:
         inv_pos = torch.pow(y * lam + 1.0, 1.0 / lam) - 1.0
         inv_neg = -torch.pow(-y * (2.0 - lam) + 1.0, 1.0 / (2.0 - lam)) + 1.0
         if not torch.isfinite(inv_pos).all() or not torch.isfinite(inv_neg).all():
-            logger.warning("Inverse transform produced non-finite values; check target scaling parameters.")
+            logger.warning(
+                "Inverse transform produced non-finite values; check target scaling parameters."
+            )
         return torch.where(pos, inv_pos, inv_neg)
 
     def convert_raw_triplet(self, z3: Tensor, dir_idx: int) -> Tensor:

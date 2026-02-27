@@ -41,9 +41,7 @@ def _merge_single(conn: sqlite3.Connection, src_path: str, tables: Sequence[str]
 
 
 def merge_databases(
-    inputs: Iterable[str],
-    output: str,
-    tables: Sequence[str] = DEFAULT_TABLES,
+    inputs: Iterable[str], output: str, tables: Sequence[str] = DEFAULT_TABLES
 ) -> None:
     inputs = list(inputs)
     if not inputs:

@@ -2,6 +2,7 @@
 from copy import deepcopy
 from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode
 
+
 def resolve_modes(base_cfg, args, yaml_space):
     """
     CLI decides extra/global. YAML only tunes sub-knobs.
@@ -12,11 +13,13 @@ def resolve_modes(base_cfg, args, yaml_space):
     cfg["extra_mode"] = canonicalize_extra_mode(getattr(args, "extra_mode", "baseline"))
     wanted = canonicalize_global_mode(getattr(args, "global_mode", "none"))
 
-    gspec = yaml_space.get("global_feats") if isinstance(yaml_space.get("global_feats"), dict) else {}
+    gspec = (
+        yaml_space.get("global_feats") if isinstance(yaml_space.get("global_feats"), dict) else {}
+    )
 
     if wanted == "none":
         cfg["global_mode"] = "none"
-        pruned = {k:v for k,v in yaml_space.items() if k != "global_feats"}
+        pruned = {k: v for k, v in yaml_space.items() if k != "global_feats"}
         return cfg, pruned, None
 
     if wanted == "auto":

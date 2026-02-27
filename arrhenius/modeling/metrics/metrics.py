@@ -14,8 +14,9 @@ class Tgt(str, Enum):
     N = "n"
     EAY = "EaY"
     LNK = "lnk"
-    A  = "A"
+    A = "A"
     EA = "Ea"
+
 
 def _key(x):
     # Works for Enum or plain str
@@ -31,7 +32,7 @@ class MetricRegistry(nn.Module):
         metrics_builders,
         splits=("val", "test"),
         include_lnk: bool = False,
-        namespace: str | None = None,   # <- NEW: lets us avoid key collisions
+        namespace: str | None = None,  # <- NEW: lets us avoid key collisions
     ):
         super().__init__()
         self.targets_cols = dict(targets_cols)  # e.g., {Tgt.A10:0, Tgt.N:1, Tgt.EAY:2}

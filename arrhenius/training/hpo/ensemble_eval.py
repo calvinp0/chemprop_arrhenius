@@ -33,18 +33,48 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--summary-json", required=True, help="Path to the final summary JSON.")
     p.add_argument("--sdf-path", required=True)
     p.add_argument("--target-csv", required=True)
-    p.add_argument("--rad-dir", help="RAD features directory (required when extra_mode uses atom extras).")
-    p.add_argument("--output-dir", required=True, help="Directory to save parity plots and prediction CSV.")
-    p.add_argument("--accelerator", default=None, help="Optional Lightning accelerator override (e.g. 'cpu', 'gpu', 'auto').")
-    p.add_argument("--devices", default=None, help="Optional Lightning devices override (e.g. 1, 'auto').")
-    p.add_argument("--ensemble-size", type=int, default=5, help="Number of ensemble members to train.")
-    p.add_argument("--test-frac", type=float, default=0.10, help="Fraction of data reserved for hold-out testing.")
-    p.add_argument("--seed", type=int, help="Override the random seed used for splitting and training.")
-    p.add_argument("--save-members", action="store_true", help="Export trained ensemble members for later reuse.")
-    p.add_argument("--member-format", choices=["ckpt", "state_dict"], default="ckpt",
-                   help="Format used when exporting ensemble members (default: reuse best Lightning checkpoints).")
-    p.add_argument("--save-normalizers", action="store_true",
-                   help="Persist fitted scalers/normalizers alongside the models for deployment.")
+    p.add_argument(
+        "--rad-dir", help="RAD features directory (required when extra_mode uses atom extras)."
+    )
+    p.add_argument(
+        "--output-dir", required=True, help="Directory to save parity plots and prediction CSV."
+    )
+    p.add_argument(
+        "--accelerator",
+        default=None,
+        help="Optional Lightning accelerator override (e.g. 'cpu', 'gpu', 'auto').",
+    )
+    p.add_argument(
+        "--devices", default=None, help="Optional Lightning devices override (e.g. 1, 'auto')."
+    )
+    p.add_argument(
+        "--ensemble-size", type=int, default=5, help="Number of ensemble members to train."
+    )
+    p.add_argument(
+        "--test-frac",
+        type=float,
+        default=0.10,
+        help="Fraction of data reserved for hold-out testing.",
+    )
+    p.add_argument(
+        "--seed", type=int, help="Override the random seed used for splitting and training."
+    )
+    p.add_argument(
+        "--save-members",
+        action="store_true",
+        help="Export trained ensemble members for later reuse.",
+    )
+    p.add_argument(
+        "--member-format",
+        choices=["ckpt", "state_dict"],
+        default="ckpt",
+        help="Format used when exporting ensemble members (default: reuse best Lightning checkpoints).",
+    )
+    p.add_argument(
+        "--save-normalizers",
+        action="store_true",
+        help="Persist fitted scalers/normalizers alongside the models for deployment.",
+    )
     return p
 
 
@@ -53,7 +83,9 @@ def _resolve_devices(
     accelerator_override: Optional[str] = None,
     devices_override: Optional[str | int] = None,
 ) -> Tuple[str | int, str | int]:
-    accelerator_cfg = accelerator_override if accelerator_override is not None else cfg.get("accelerator", "auto")
+    accelerator_cfg = (
+        accelerator_override if accelerator_override is not None else cfg.get("accelerator", "auto")
+    )
     if isinstance(accelerator_cfg, str):
         accelerator = accelerator_cfg.lower()
     else:
@@ -86,10 +118,7 @@ def _resolve_precision(cfg: Dict[str, Any], accelerator: str | int) -> str | int
 
 
 def _make_holdout_split(
-    cfg: Dict[str, Any],
-    bundle,
-    test_frac: float,
-    seed: int,
+    cfg: Dict[str, Any], bundle, test_frac: float, seed: int
 ) -> Tuple[List[int], List[int]]:
     if not (0.0 < test_frac < 1.0):
         raise ValueError(f"test_frac must be in (0,1); received {test_frac}")
@@ -97,11 +126,7 @@ def _make_holdout_split(
     train_frac = 1.0 - test_frac
     splitter = str(cfg.get("splitter", "kstone")).lower()
     data = (bundle.donors_kept, bundle.acceptors_kept)
-    kwargs = {
-        "sizes": (train_frac, 0.0, test_frac),
-        "seed": seed,
-        "num_replicates": 1,
-    }
+    kwargs = {"sizes": (train_frac, 0.0, test_frac), "seed": seed, "num_replicates": 1}
     if splitter == "random":
         train_reps, _, test_reps = random_grouped_split_indices(
             data,
@@ -133,11 +158,7 @@ def _make_holdout_split(
 
 
 def _inner_splits_for_ensemble(
-    cfg: Dict[str, Any],
-    bundle,
-    base_indices: Sequence[int],
-    ensemble_size: int,
-    seed: int,
+    cfg: Dict[str, Any], bundle, base_indices: Sequence[int], ensemble_size: int, seed: int
 ) -> List[Tuple[List[int], List[int]]]:
     if ensemble_size <= 0:
         raise ValueError("ensemble_size must be positive.")
@@ -148,11 +169,7 @@ def _inner_splits_for_ensemble(
     group_keys = [bundle.pair_group_keys[i] for i in base_indices]
 
     splitter = str(cfg.get("splitter", "kstone")).lower()
-    kwargs = {
-        "sizes": (0.85, 0.15, 0.0),
-        "seed": seed,
-        "num_replicates": ensemble_size,
-    }
+    kwargs = {"sizes": (0.85, 0.15, 0.0), "seed": seed, "num_replicates": ensemble_size}
     if splitter == "random":
         train_reps, val_reps, _ = random_grouped_split_indices(
             (donors, acceptors),
@@ -225,9 +242,7 @@ def _train_single_member(
     unscaler = UnscaleColumnTransform.from_column_transformer(y_scaler).eval()
 
     arr_mean_for, arr_scale_for, arr_mean_rev, arr_scale_rev = compute_arrhenius_scalers_from_train(
-        train_loader,
-        y_scaler,
-        cfg["temperatures"],
+        train_loader, y_scaler, cfg["temperatures"]
     )
 
     model = model_factory_from_cfg(
@@ -286,11 +301,7 @@ def _train_single_member(
             test_metrics[str(k)] = float(v)
         test_loss = test_metrics.get("test_loss")
 
-    predict_outputs = trainer.predict(
-        model,
-        dataloaders=test_loader,
-        ckpt_path=best_ckpt_path,
-    )
+    predict_outputs = trainer.predict(model, dataloaders=test_loader, ckpt_path=best_ckpt_path)
     if not predict_outputs:
         raise RuntimeError(f"No predictions produced for ensemble member {rep_id}.")
 
@@ -379,18 +390,12 @@ def _train_ensemble_members(
         preds_Ea.append(preds["Ea"])
         replicate_info.append(info)
 
-    stacked_preds = {
-        "A": np.vstack(preds_A),
-        "n": np.vstack(preds_n),
-        "Ea": np.vstack(preds_Ea),
-    }
+    stacked_preds = {"A": np.vstack(preds_A), "n": np.vstack(preds_n), "Ea": np.vstack(preds_Ea)}
     return stacked_preds, replicate_info
 
 
 def _export_ensemble_members(
-    replicates: List[Dict[str, Any]],
-    output_dir: Path,
-    export_format: str = "ckpt",
+    replicates: List[Dict[str, Any]], output_dir: Path, export_format: str = "ckpt"
 ) -> List[str]:
     export_dir = output_dir / "exported_members"
     export_dir.mkdir(parents=True, exist_ok=True)
@@ -437,7 +442,9 @@ def _prepare_bundle(cfg: Dict[str, Any], args) -> Any:
     extras_mode = canonicalize_extra_mode(cfg.get("extra_mode", "baseline"))
     mode_cfg = mode_settings(extras_mode)
     if mode_cfg["use_extras"]:
-        assert args.rad_dir, "--rad-dir must be provided when the selected extra_mode uses atom extras"
+        assert (
+            args.rad_dir
+        ), "--rad-dir must be provided when the selected extra_mode uses atom extras"
 
     bundle = prepare_data(
         sdf_path=args.sdf_path,
@@ -476,7 +483,9 @@ def _true_targets(bundle, test_indices: Sequence[int]) -> Dict[str, np.ndarray]:
     }
 
 
-def _plot_parity(y_true: np.ndarray, y_pred: np.ndarray, label: str, path: str, log_scale: bool = False):
+def _plot_parity(
+    y_true: np.ndarray, y_pred: np.ndarray, label: str, path: str, log_scale: bool = False
+):
     min_val = min(y_true.min(), y_pred.min())
     max_val = max(y_true.max(), y_pred.max())
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -512,7 +521,9 @@ def main():
         else:
             devices_override = args.devices
 
-    accelerator_override = args.accelerator.strip().lower() if isinstance(args.accelerator, str) else args.accelerator
+    accelerator_override = (
+        args.accelerator.strip().lower() if isinstance(args.accelerator, str) else args.accelerator
+    )
 
     with open(args.summary_json, "r") as f:
         summary = json.load(f)
@@ -537,7 +548,9 @@ def main():
     pl.seed_everything(base_seed, workers=True)
 
     train_base_idx, test_idx = _make_holdout_split(best_cfg, bundle, test_frac, base_seed)
-    print(f"[INFO] Hold-out split: {len(train_base_idx)} train candidates, {len(test_idx)} test samples.")
+    print(
+        f"[INFO] Hold-out split: {len(train_base_idx)} train candidates, {len(test_idx)} test samples."
+    )
 
     global_norms = fit_global_normalizers(bundle, best_cfg, train_base_idx)
 
@@ -568,21 +581,23 @@ def main():
     ensemble_n = n_preds.mean(axis=0)
     ensemble_Ea = Ea_preds.mean(axis=0)
 
-    df = pd.DataFrame({
-        "name": targets["names"],
-        "reaction_id": targets["base_names"],
-        "A_true": targets["A"],
-        "n_true": targets["n"],
-        "Ea_true": targets["Ea"],
-        "A_pred_mean": ensemble_A,
-        "A_pred_std": A_preds.std(axis=0),
-        "n_pred_mean": ensemble_n,
-        "n_pred_std": n_preds.std(axis=0),
-        "Ea_pred_mean": ensemble_Ea,
-        "Ea_pred_std": Ea_preds.std(axis=0),
-        "log10A_true": np.log10(targets["A"]),
-        "log10A_pred_mean": np.log10(np.clip(ensemble_A, a_min=1e-30, a_max=None)),
-    })
+    df = pd.DataFrame(
+        {
+            "name": targets["names"],
+            "reaction_id": targets["base_names"],
+            "A_true": targets["A"],
+            "n_true": targets["n"],
+            "Ea_true": targets["Ea"],
+            "A_pred_mean": ensemble_A,
+            "A_pred_std": A_preds.std(axis=0),
+            "n_pred_mean": ensemble_n,
+            "n_pred_std": n_preds.std(axis=0),
+            "Ea_pred_mean": ensemble_Ea,
+            "Ea_pred_std": Ea_preds.std(axis=0),
+            "log10A_true": np.log10(targets["A"]),
+            "log10A_pred_mean": np.log10(np.clip(ensemble_A, a_min=1e-30, a_max=None)),
+        }
+    )
 
     csv_path = output_dir / "ensemble_predictions.csv"
     df.to_csv(csv_path, index=False)
@@ -591,9 +606,7 @@ def main():
     normalizers_path: Optional[str] = None
     if args.save_members:
         exported_members = _export_ensemble_members(
-            replicates=replicate_info,
-            output_dir=output_dir,
-            export_format=args.member_format,
+            replicates=replicate_info, output_dir=output_dir, export_format=args.member_format
         )
     if args.save_normalizers or args.save_members:
         normalizers_path = _persist_normalizers(global_norms, output_dir)
@@ -610,7 +623,9 @@ def main():
         "accelerator": accelerator,
         "devices": devices,
         "precision": precision,
-        "r_bounds": list(global_norms.get("r_bounds", ())) if global_norms.get("r_bounds") else None,
+        "r_bounds": list(global_norms.get("r_bounds", ()))
+        if global_norms.get("r_bounds")
+        else None,
         "exported_members": exported_members,
         "normalizers_path": normalizers_path,
     }

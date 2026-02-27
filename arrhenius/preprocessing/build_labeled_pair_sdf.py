@@ -195,11 +195,7 @@ def _build_mol_properties(
 
 
 def _attach_properties(
-    mol: Chem.Mol,
-    *,
-    reaction_id: str,
-    mol_type: str,
-    mol_properties: dict[str, dict[str, str]],
+    mol: Chem.Mol, *, reaction_id: str, mol_type: str, mol_properties: dict[str, dict[str, str]]
 ) -> Chem.Mol:
     work = Chem.Mol(mol)
     work.SetProp("reaction", reaction_id)

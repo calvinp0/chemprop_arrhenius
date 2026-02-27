@@ -55,10 +55,7 @@ def build_outer_splits(
     data = (list(donors), list(acceptors))
 
     if splitter == "random":
-        train_reps, holdout_reps, _ = random_grouped_split_indices(
-            data,
-            **common_kwargs,
-        )
+        train_reps, holdout_reps, _ = random_grouped_split_indices(data, **common_kwargs)
     else:
         train_reps, holdout_reps, _ = ks_make_split_indices(
             data,

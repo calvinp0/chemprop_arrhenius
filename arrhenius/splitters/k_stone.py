@@ -6,6 +6,7 @@ import warnings
 
 from rdkit import Chem
 from rdkit.Chem import inchi
+
 # ---- AIMSim imports behind a safe shim ----
 Molecule = None
 LoadingError = None
@@ -25,6 +26,7 @@ ArrayLikeMol = Union[str, "Chem.Mol"]
 
 from collections import defaultdict
 
+
 def _to_mol(x: ArrayLikeMol) -> Chem.Mol | None:
     if isinstance(x, Chem.Mol):
         return x
@@ -32,36 +34,41 @@ def _to_mol(x: ArrayLikeMol) -> Chem.Mol | None:
         return Chem.MolFromSmiles(x)
     return None
 
-def _canon_key(m: ArrayLikeMol, mode: Literal["inchikey","inchikey14","smiles"]="inchikey") -> str:
+
+def _canon_key(
+    m: ArrayLikeMol, mode: Literal["inchikey", "inchikey14", "smiles"] = "inchikey"
+) -> str:
     mol = _to_mol(m)
     if mol is None:
         return ""
     if mode == "inchikey":
-        return inchi.MolToInchiKey(mol)               # <— fix
+        return inchi.MolToInchiKey(mol)  # <— fix
     if mode == "inchikey14":
-        return inchi.MolToInchiKey(mol)[:14]          # connectivity layer only
+        return inchi.MolToInchiKey(mol)[:14]  # connectivity layer only
     # mode == "smiles"
     return Chem.MolToSmiles(mol, isomericSmiles=True, canonical=True)
+
 
 def _pair_key(
     d: ArrayLikeMol,
     a: ArrayLikeMol,
     *,
     unordered: bool = True,
-    key_mode: Literal["inchikey","smiles"] = "inchikey",
+    key_mode: Literal["inchikey", "smiles"] = "inchikey",
 ) -> tuple[str, str]:
     kd, ka = _canon_key(d, key_mode), _canon_key(a, key_mode)
     if unordered:
         return tuple(sorted((kd, ka)))
     return (kd, ka)
 
+
 def _group_pairs(
     donors: Sequence[ArrayLikeMol],
     acceptors: Sequence[ArrayLikeMol],
     *,
     unordered: bool = True,
-    key_mode: Literal["inchikey","smiles","inchikey14"] = "inchikey",
-    pair_group_keys: Optional[List[Hashable]] = None,          # <— NEW
+    key_mode: Literal["inchikey", "smiles", "inchikey14"] = "inchikey",
+    pair_group_keys: Optional[List[Hashable]] = None,  # <— NEW
 ):
     groups: dict[Hashable, list[int]] = defaultdict(list)
     if pair_group_keys is not None:
@@ -71,7 +78,8 @@ def _group_pairs(
             groups[key].append(i)
     else:
         for i, (d, a) in enumerate(zip(donors, acceptors)):
-            kd = _canon_key(d, key_mode); ka = _canon_key(a, key_mode)
+            kd = _canon_key(d, key_mode)
+            ka = _canon_key(a, key_mode)
             k = tuple(sorted((kd, ka))) if unordered else (kd, ka)
             groups[k].append(i)
 
@@ -79,6 +87,7 @@ def _group_pairs(
     rep_donors = [donors[groups[k][0]] for k in gkeys]
     rep_acceptors = [acceptors[groups[k][0]] for k in gkeys]
     return gkeys, groups, rep_donors, rep_acceptors
+
 
 def _safe_div(num: np.ndarray, den: np.ndarray) -> np.ndarray:
     out = np.zeros_like(num, dtype=float)
@@ -216,7 +225,7 @@ class KSSplitterAIMSim:
         # --- NEW: grouping controls ---
         group_by_pair: bool = False,
         unordered_pairs: bool = True,
-        pair_key_mode: Literal["inchikey","smiles"] = "inchikey",
+        pair_key_mode: Literal["inchikey", "smiles"] = "inchikey",
         keep_all_group_members: bool = True,  # if False, you effectively dedupe
         pair_group_keys: Optional[List[Hashable]] = None,  # if provided, use these as group keys
     ):
@@ -330,7 +339,8 @@ class KSSplitterAIMSim:
         if kind == "pairs" and self.group_by_pair:
             # --- GROUPED MODE ---
             gkeys, groups, rep_donors, rep_acceptors = _group_pairs(
-                donors, acceptors,
+                donors,
+                acceptors,
                 unordered=self.unordered_pairs,
                 key_mode=self.pair_key_mode,
                 pair_group_keys=self.pair_group_keys,
@@ -338,20 +348,20 @@ class KSSplitterAIMSim:
 
             # distance on group representatives
             D = self._compute_D_pairs(rep_donors, rep_acceptors)
-            g_order = kennard_stone_order(D, seed=self.seed)   # indices into gkeys
+            g_order = kennard_stone_order(D, seed=self.seed)  # indices into gkeys
             n_groups = len(gkeys)
 
             # slice by *groups*
             n_train_g = int(round(train_frac * n_groups))
             if val_frac == 0.0 or test_frac == 0.0:
                 train_g = g_order[:n_train_g]
-                val_g   = np.array([], dtype=int)
-                test_g  = g_order[n_train_g:]
+                val_g = np.array([], dtype=int)
+                test_g = g_order[n_train_g:]
             else:
                 n_val_g = int(round(val_frac * n_groups))
                 train_g = g_order[:n_train_g]
-                val_g   = g_order[n_train_g : n_train_g + n_val_g]
-                test_g  = g_order[n_train_g + n_val_g :]
+                val_g = g_order[n_train_g : n_train_g + n_val_g]
+                test_g = g_order[n_train_g + n_val_g :]
 
             # expand groups → row indices
             def expand(gs: np.ndarray) -> list[int]:
@@ -363,8 +373,8 @@ class KSSplitterAIMSim:
                 return out
 
             train_idx = expand(train_g)
-            val_idx   = expand(val_g)
-            test_idx  = expand(test_g)
+            val_idx = expand(val_g)
+            test_idx = expand(test_g)
 
             # ‘order’ = representative per group in KS order
             order = np.array([groups[gkeys[g]][0] for g in g_order], dtype=int)
@@ -374,19 +384,19 @@ class KSSplitterAIMSim:
         if kind == "pairs":
             D = self._compute_D_pairs(donors, acceptors)  # type: ignore
         else:
-            D = self._compute_D_single(donors)            # type: ignore
+            D = self._compute_D_single(donors)  # type: ignore
 
         order = kennard_stone_order(D, seed=self.seed)
         n_train = int(round(train_frac * n))
         if val_frac == 0.0 or test_frac == 0.0:
             train_idx = order[:n_train].tolist()
-            val_idx   = []
-            test_idx  = order[n_train:].tolist()
+            val_idx = []
+            test_idx = order[n_train:].tolist()
         else:
             n_val = int(round(val_frac * n))
             train_idx = order[:n_train].tolist()
-            val_idx   = order[n_train : n_train + n_val].tolist()
-            test_idx  = order[n_train + n_val :].tolist()
+            val_idx = order[n_train : n_train + n_val].tolist()
+            test_idx = order[n_train + n_val :].tolist()
 
         return train_idx, val_idx, test_idx, order
 
@@ -412,10 +422,9 @@ def ks_make_split_indices(
     keep_all_group_members: bool = True,
     pair_group_keys: Optional[List[Hashable]] = None,
 ) -> Tuple[List[List[int]], List[List[int]], List[List[int]]]:
-
     train_reps: List[List[int]] = []
-    val_reps:   List[List[int]] = []
-    test_reps:  List[List[int]] = []
+    val_reps: List[List[int]] = []
+    test_reps: List[List[int]] = []
 
     for r in range(num_replicates):
         splitter = KSSplitterAIMSim(
@@ -434,17 +443,14 @@ def ks_make_split_indices(
         )
 
         tr, va, te, _ = splitter.split_indices(
-            data,
-            train_frac=sizes[0],
-            val_frac=sizes[1],
-            test_frac=sizes[2],
+            data, train_frac=sizes[0], val_frac=sizes[1], test_frac=sizes[2]
         )
 
         # Use the splitter’s expanded indices directly:
         if sizes[2] == 0.0 and sizes[1] > 0.0:
             # 2-way train/val (mirroring your earlier behavior)
             train_reps.append(tr)
-            val_reps.append(te)   # splitter returns (train, val, test); in 2-way, it used test
+            val_reps.append(te)  # splitter returns (train, val, test); in 2-way, it used test
             test_reps.append([])
         else:
             train_reps.append(tr)

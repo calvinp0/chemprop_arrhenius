@@ -44,17 +44,25 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
         target_df = pd.read_csv(target_csv)
         required_targets = list(spec["schema"]["target_columns"])
         _append_missing(errors, list(target_df.columns), required_targets, "target_csv")
-        _append_missing(errors, list(target_df.columns), [target_rxn_col, target_label_col], "target_csv")
+        _append_missing(
+            errors, list(target_df.columns), [target_rxn_col, target_label_col], "target_csv"
+        )
         stats["target_rows"] = int(len(target_df))
 
     target_rxn_values = set()
     target_group = None
     if target_df is not None and target_rxn_col in target_df.columns:
-        target_rxn_values = set(map(str, target_df[target_rxn_col].dropna().astype(str).unique().tolist()))
-        target_group = target_df.groupby(target_rxn_col) if target_label_col in target_df.columns else None
+        target_rxn_values = set(
+            map(str, target_df[target_rxn_col].dropna().astype(str).unique().tolist())
+        )
+        target_group = (
+            target_df.groupby(target_rxn_col) if target_label_col in target_df.columns else None
+        )
 
     if sdf_path.is_dir():
-        sdf_files = sorted(p for p in sdf_path.iterdir() if p.is_file() and p.suffix.lower() == ".sdf")
+        sdf_files = sorted(
+            p for p in sdf_path.iterdir() if p.is_file() and p.suffix.lower() == ".sdf"
+        )
         stats["sdf_file_count"] = int(len(sdf_files))
         if not sdf_files:
             errors.append(f"sdf_path has no .sdf files: {sdf_path}")
@@ -123,7 +131,9 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
                         else:
                             rfor = rows.loc[rows[target_label_col] == target_forward_label].iloc[0]
                             rrev = rows.loc[rows[target_label_col] == target_reverse_label].iloc[0]
-                            vals = [float(rfor[c]) for c in required_targets] + [float(rrev[c]) for c in required_targets]
+                            vals = [float(rfor[c]) for c in required_targets] + [
+                                float(rrev[c]) for c in required_targets
+                            ]
                             if any(pd.isna(v) for v in vals):
                                 nonfinite_target_rows += 1
                 elif target_rxn_values and rxn_id not in target_rxn_values:
@@ -143,9 +153,13 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
             if parse_fail_files > 0:
                 errors.append(f"{parse_fail_files} sdf files could not be parsed by RDKit.")
             if missing_type_prop > 0:
-                errors.append(f"{missing_type_prop} molecules in SDFs are missing required 'type' property.")
+                errors.append(
+                    f"{missing_type_prop} molecules in SDFs are missing required 'type' property."
+                )
             if missing_reaction_prop > 0:
-                errors.append(f"{missing_reaction_prop} molecules in SDFs are missing required 'reaction' property.")
+                errors.append(
+                    f"{missing_reaction_prop} molecules in SDFs are missing required 'reaction' property."
+                )
             if missing_r1h > 0:
                 errors.append(f"{missing_r1h} sdf files are missing a molecule with type='r1h'.")
             if missing_r2h > 0:
@@ -156,14 +170,18 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
                     "(reaction prop mismatch or multiple reaction values)."
                 )
             if missing_in_target > 0:
-                errors.append(f"{missing_in_target} sdf files have no matching target rows in target_csv.")
+                errors.append(
+                    f"{missing_in_target} sdf files have no matching target rows in target_csv."
+                )
             if missing_pair_labels > 0:
                 errors.append(
                     f"{missing_pair_labels} reactions are missing required forward/reverse labels "
                     f"('{target_forward_label}', '{target_reverse_label}')."
                 )
             if nonfinite_target_rows > 0:
-                errors.append(f"{nonfinite_target_rows} reactions have NaN target values in required target columns.")
+                errors.append(
+                    f"{nonfinite_target_rows} reactions have NaN target values in required target columns."
+                )
             if ambiguous_types > 0:
                 warnings.append(
                     f"{ambiguous_types} sdf files contain multiple r1h/r2h molecules; "
@@ -175,13 +193,18 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
 
     if uses_extras:
         if rad_dir is None or not rad_dir.is_dir():
-            errors.append(f"rad_dir is required for extra_mode='{spec['modes']['extra_mode']}' and must be a directory.")
+            errors.append(
+                f"rad_dir is required for extra_mode='{spec['modes']['extra_mode']}' and must be a directory."
+            )
         else:
             if spec["modes"]["rad_source"] == "path":
                 candidates = [rad_dir / "atom_with_geom_feats_path.csv"]
             else:
                 # Prefer new naming, accept legacy default for compatibility.
-                candidates = [rad_dir / "atom_with_geom_feats_rad.csv", rad_dir / "atom_with_geom_feats_default.csv"]
+                candidates = [
+                    rad_dir / "atom_with_geom_feats_rad.csv",
+                    rad_dir / "atom_with_geom_feats_default.csv",
+                ]
             rad_csv = next((p for p in candidates if p.is_file()), None)
             if rad_csv is None:
                 errors.append(f"RAD CSV missing. Tried: {[str(p) for p in candidates]}")
@@ -221,7 +244,9 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
                         )
 
                     by_rxn = rad_df.groupby(rxn_col)[mol_col].agg(set)
-                    missing_pairs = int((~by_rxn.apply(lambda s: donor_tag in s and acceptor_tag in s)).sum())
+                    missing_pairs = int(
+                        (~by_rxn.apply(lambda s: donor_tag in s and acceptor_tag in s)).sum()
+                    )
                     stats["rad_rxn_missing_pair_tags"] = missing_pairs
                     if missing_pairs > 0:
                         errors.append(
@@ -255,7 +280,12 @@ def validate_data_spec(spec_path: str, sample_rows: int = 2000) -> Tuple[bool, D
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Validate data_spec YAML and source files for run_hpo.")
     p.add_argument("--spec", required=True, help="Path to data_spec YAML file.")
-    p.add_argument("--sample-rows", type=int, default=2000, help="Rows to sample for shortest_path parse checks.")
+    p.add_argument(
+        "--sample-rows",
+        type=int,
+        default=2000,
+        help="Rows to sample for shortest_path parse checks.",
+    )
     return p
 
 
@@ -271,7 +301,9 @@ def main(argv: List[str] | None = None) -> int:
         return 3
 
     print(f"[SPEC] {args.spec}")
-    print(f"[MODE] extra={report['spec']['modes']['extra_mode']} global={report['spec']['modes']['global_mode']} rad_source={report['spec']['modes']['rad_source']}")
+    print(
+        f"[MODE] extra={report['spec']['modes']['extra_mode']} global={report['spec']['modes']['global_mode']} rad_source={report['spec']['modes']['rad_source']}"
+    )
     for k, v in sorted(report["stats"].items()):
         print(f"[STAT] {k}={v}")
     for w in report["warnings"]:

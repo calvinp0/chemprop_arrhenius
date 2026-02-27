@@ -5,7 +5,11 @@ from typing import Any, Dict
 
 import yaml
 
-from arrhenius.training.hpo.feature_modes import canonicalize_extra_mode, canonicalize_global_mode, mode_settings
+from arrhenius.training.hpo.feature_modes import (
+    canonicalize_extra_mode,
+    canonicalize_global_mode,
+    mode_settings,
+)
 from arrhenius.training.hpo.feature_modes import canonicalize_rad_source
 
 
@@ -56,7 +60,9 @@ def load_data_spec(path: str | Path) -> Dict[str, Any]:
             "morgan_radius": int(_pick(modes, "morgan_radius", "morgan_radius", 2)),
         },
         "schema": {
-            "target_columns": list(_pick(schema, "target_columns", "target_columns", ["A_log10", "n", "Ea"])),
+            "target_columns": list(
+                _pick(schema, "target_columns", "target_columns", ["A_log10", "n", "Ea"])
+            ),
             "target_rxn_col": str(_pick(schema, "target_rxn_col", "target_rxn_col", "rxn")),
             "target_label_col": str(_pick(schema, "target_label_col", "target_label_col", "label")),
             "target_forward_label": str(
@@ -67,8 +73,12 @@ def load_data_spec(path: str | Path) -> Dict[str, Any]:
             ),
             "rxn_id_col": str(_pick(schema, "rxn_id_col", "rxn_id_col", "rxn_id")),
             "mol_type_col": str(_pick(schema, "mol_type_col", "mol_type_col", "mol_type")),
-            "atom_index_col": str(_pick(schema, "atom_index_col", "atom_index_col", "focus_atom_idx")),
-            "shortest_path_col": str(_pick(schema, "shortest_path_col", "shortest_path_col", "shortest_path")),
+            "atom_index_col": str(
+                _pick(schema, "atom_index_col", "atom_index_col", "focus_atom_idx")
+            ),
+            "shortest_path_col": str(
+                _pick(schema, "shortest_path_col", "shortest_path_col", "shortest_path")
+            ),
             "donor_tag": str(_pick(schema, "donor_tag", "donor_tag", "r1h")),
             "acceptor_tag": str(_pick(schema, "acceptor_tag", "acceptor_tag", "r2h")),
         },

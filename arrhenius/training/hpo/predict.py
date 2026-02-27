@@ -22,14 +22,24 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--sdf-path", required=True, help="SDF used for featurisation.")
     p.add_argument("--input-csv", required=True, help="Input CSV of reactions to score.")
-    p.add_argument("--rad-dir", help="RAD feature directory (required when extra_mode uses atom extras).")
+    p.add_argument(
+        "--rad-dir", help="RAD feature directory (required when extra_mode uses atom extras)."
+    )
     p.add_argument("--output-csv", required=True, help="Where to write predictions CSV.")
-    p.add_argument("--summary-json", help="Optional final summary JSON fallback if metadata lacks best_cfg.")
-    p.add_argument("--max-members", type=int, default=0, help="Limit ensemble members used (0 = all).")
+    p.add_argument(
+        "--summary-json", help="Optional final summary JSON fallback if metadata lacks best_cfg."
+    )
+    p.add_argument(
+        "--max-members", type=int, default=0, help="Limit ensemble members used (0 = all)."
+    )
     p.add_argument("--seed", type=int, default=None, help="Seed override for loader determinism.")
-    p.add_argument("--accelerator", default="cpu", help="Lightning accelerator for prediction (cpu/gpu/auto).")
+    p.add_argument(
+        "--accelerator", default="cpu", help="Lightning accelerator for prediction (cpu/gpu/auto)."
+    )
     p.add_argument("--devices", default="1", help="Lightning devices value (e.g. 1 or auto).")
-    p.add_argument("--precision", default=None, help="Optional precision override, e.g. 32-true or 16-mixed.")
+    p.add_argument(
+        "--precision", default=None, help="Optional precision override, e.g. 32-true or 16-mixed."
+    )
     return p
 
 
@@ -169,7 +179,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             "joblib is required for inference bundle loading. Install it in the active environment."
         ) from e
 
-    normalizers_path = metadata.get("normalizers_path") or str(bundle_dir / "global_normalizers.joblib")
+    normalizers_path = metadata.get("normalizers_path") or str(
+        bundle_dir / "global_normalizers.joblib"
+    )
     normalizers_path = Path(normalizers_path)
     if not normalizers_path.is_file():
         candidate = bundle_dir / normalizers_path.name
@@ -189,7 +201,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         raise FileNotFoundError("No member checkpoints found in bundle metadata/exported_members.")
 
     target_cols = ["A_log10", "n", "Ea"]
-    input_csv = _ensure_target_columns(Path(args.input_csv).resolve(), target_cols, output_csv.parent)
+    input_csv = _ensure_target_columns(
+        Path(args.input_csv).resolve(), target_cols, output_csv.parent
+    )
 
     if mode_cfg["use_extras"] and not args.rad_dir:
         raise ValueError(f"--rad-dir is required for extra_mode='{extras_mode}'.")
@@ -201,7 +215,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         global_mode=str(cfg.get("global_mode", "none")),
         morgan_bits=int(cfg.get("morgan_bits", 2048)),
         morgan_radius=int(cfg.get("morgan_radius", 2)),
-        rad_dir=str(Path(args.rad_dir).resolve()) if (mode_cfg["use_extras"] and args.rad_dir) else None,
+        rad_dir=str(Path(args.rad_dir).resolve())
+        if (mode_cfg["use_extras"] and args.rad_dir)
+        else None,
         rad_source=str(cfg.get("rad_source", "path")),
     )
 
@@ -229,7 +245,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     if test_loader is None:
         raise RuntimeError("Failed to construct test loader for inference.")
 
-    accelerator = str(args.accelerator).strip().lower() if isinstance(args.accelerator, str) else args.accelerator
+    accelerator = (
+        str(args.accelerator).strip().lower()
+        if isinstance(args.accelerator, str)
+        else args.accelerator
+    )
     devices = _resolve_devices(args.devices)
     precision = args.precision if args.precision is not None else cfg.get("precision", "32-true")
     if accelerator == "cpu" and str(precision).startswith("16"):
@@ -251,7 +271,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         outputs = trainer.predict(model, dataloaders=test_loader)
         raw = _extract_raw(outputs)
         if raw.shape[0] != n:
-            raise RuntimeError(f"Prediction length mismatch for {ckpt}: {raw.shape[0]} vs expected {n}")
+            raise RuntimeError(
+                f"Prediction length mismatch for {ckpt}: {raw.shape[0]} vs expected {n}"
+            )
         member_preds.append(raw)
         used_members.append(str(ckpt))
 

@@ -10,18 +10,22 @@ import ast
 import argparse
 from pathlib import Path
 
+
 def get_distance(coords, i, j):
     return np.linalg.norm(coords[i] - coords[j])
+
 
 def get_angle(coords, i, j, k, eps=1e-12):
     # Angle at j (i-j-k)
     v1 = coords[i] - coords[j]
     v2 = coords[k] - coords[j]
-    n1 = np.linalg.norm(v1); n2 = np.linalg.norm(v2)
+    n1 = np.linalg.norm(v1)
+    n2 = np.linalg.norm(v2)
     if n1 < eps or n2 < eps:
         return np.nan
     cos_theta = np.dot(v1, v2) / (n1 * n2)
     return np.arccos(np.clip(cos_theta, -1.0, 1.0))
+
 
 def get_dihedral(coords, i, j, k, l, eps=1e-12):
     # Dihedral angle between i-j-k-l
@@ -35,12 +39,14 @@ def get_dihedral(coords, i, j, k, l, eps=1e-12):
     b1 = b1 / n1
     v = b0 - np.dot(b0, b1) * b1
     w = b2 - np.dot(b2, b1) * b1
-    nv = np.linalg.norm(v); nw = np.linalg.norm(w)
+    nv = np.linalg.norm(v)
+    nw = np.linalg.norm(w)
     if nv < eps or nw < eps:
         return np.nan
     x = np.dot(v, w)
     y = np.dot(np.cross(b1, v), w)
     return np.arctan2(y, x)
+
 
 def get_mol_coords(mol):
     """Returns (num_atoms, 3) array of atom positions from the first conformer."""
@@ -48,6 +54,7 @@ def get_mol_coords(mol):
     num_atoms = mol.GetNumAtoms()
     zcoords = np.array([list(conf.GetAtomPosition(i)) for i in range(num_atoms)])
     return zcoords
+
 
 def safe_shortest_path(mol, i, j):
     if i == j:
@@ -58,14 +65,22 @@ def safe_shortest_path(mol, i, j):
         return []
     return list(rdmolops.GetShortestPath(mol, i, j))
 
+
 def _get_role_indices(label):
-    donor_idx = None; acceptor_idx = None; ref_H_idx = None
+    donor_idx = None
+    acceptor_idx = None
+    ref_H_idx = None
     for k, v in label.items():
-        idx = int(k); role = v.get("label")
-        if role == "donator": donor_idx = idx
-        elif role == "acceptor": acceptor_idx = idx
-        elif role in ("d_hydrogen", "a_hydrogen"): ref_H_idx = idx
+        idx = int(k)
+        role = v.get("label")
+        if role == "donator":
+            donor_idx = idx
+        elif role == "acceptor":
+            acceptor_idx = idx
+        elif role in ("d_hydrogen", "a_hydrogen"):
+            ref_H_idx = idx
     return ref_H_idx, donor_idx, acceptor_idx
+
 
 def _heavy_neighbors_sorted(mol, idx, exclude=None):
     exclude = exclude or set()
@@ -81,8 +96,10 @@ def _heavy_neighbors_sorted(mol, idx, exclude=None):
     cand.sort(key=lambda x: (x[1], x[2], x[3]), reverse=True)
     return [j for j, *_ in cand]
 
+
 def _bond_order(b):
     return b.GetBondTypeAsDouble() if b is not None else 0.0
+
 
 def _choose_pivot1(mol, ref_idx):
     """Choose a neighbor of ref_idx as pivot1 using deterministic rules."""
@@ -90,18 +107,21 @@ def _choose_pivot1(mol, ref_idx):
     candidates = []
     for nbr in ref.GetNeighbors():
         bond = mol.GetBondBetweenAtoms(ref_idx, nbr.GetIdx())
-        candidates.append((
-            nbr.GetIdx(),
-            nbr.GetAtomicNum() > 1,                 # prefer heavy
-            _bond_order(bond),
-            nbr.GetAtomicNum(),
-            -nbr.GetIdx()                           # lower idx wins after reversing
-        ))
+        candidates.append(
+            (
+                nbr.GetIdx(),
+                nbr.GetAtomicNum() > 1,  # prefer heavy
+                _bond_order(bond),
+                nbr.GetAtomicNum(),
+                -nbr.GetIdx(),  # lower idx wins after reversing
+            )
+        )
     if not candidates:
         return None
     # sort by the tuple keys descending except the last (idx reversed)
     candidates.sort(key=lambda x: (x[1], x[2], x[3], x[4]), reverse=True)
     return candidates[0][0]
+
 
 def _choose_role_pivot1(mol, ref_H_idx, donor_idx, acceptor_idx):
     """
@@ -130,25 +150,30 @@ def _choose_pivot2(mol, ref_idx, pivot1_idx):
         if nbr.GetIdx() == ref_idx:
             continue
         bond = mol.GetBondBetweenAtoms(pivot1_idx, nbr.GetIdx())
-        candidates.append((
-            nbr.GetIdx(),
-            nbr.GetAtomicNum() > 1,
-            _bond_order(bond),
-            nbr.GetAtomicNum(),
-            -nbr.GetIdx()
-        ))
+        candidates.append(
+            (
+                nbr.GetIdx(),
+                nbr.GetAtomicNum() > 1,
+                _bond_order(bond),
+                nbr.GetAtomicNum(),
+                -nbr.GetIdx(),
+            )
+        )
     if not candidates:
         return None
     candidates.sort(key=lambda x: (x[1], x[2], x[3], x[4]), reverse=True)
     return candidates[0][0]
 
+
 def _angle_fallback(coords, focus_idx, ref_idx, pivot1_idx):
     # angle at ref between focus and pivot1
     return get_angle(coords, focus_idx, ref_idx, pivot1_idx)
 
+
 def _dihedral_fallback(coords, focus_idx, ref_idx, pivot1_idx, pivot2_idx):
     # dihedral: focus-ref-pivot1-pivot2
     return get_dihedral(coords, focus_idx, ref_idx, pivot1_idx, pivot2_idx)
+
 
 def _resolve_output(base: str, tag: str) -> str:
     p = Path(base)
@@ -157,11 +182,7 @@ def _resolve_output(base: str, tag: str) -> str:
     #  - ends with a path separator, OR
     #  - exists and is a directory, OR
     #  - has no file extension (heuristic — treat as dir)
-    is_dir_hint = (
-        str(base).endswith(os.sep)
-        or (p.exists() and p.is_dir())
-        or (p.suffix == "")
-    )
+    is_dir_hint = str(base).endswith(os.sep) or (p.exists() and p.is_dir()) or (p.suffix == "")
 
     if is_dir_hint:
         dirp = p
@@ -174,8 +195,14 @@ def _resolve_output(base: str, tag: str) -> str:
         p = p.with_suffix(".csv")
     return str(p.with_name(f"{p.stem}_{tag}{p.suffix}"))
 
-def compute_atomfeats(mol, label, reference_labels=('d_hydrogen', 'a_hydrogen', 'acceptor'),
-                      path_only=False, hybrid=False):
+
+def compute_atomfeats(
+    mol,
+    label,
+    reference_labels=("d_hydrogen", "a_hydrogen", "acceptor"),
+    path_only=False,
+    hybrid=False,
+):
     # Assume mol has a conformer and a valid reference
     num_atoms = mol.GetNumAtoms()
     coords = get_mol_coords(mol)
@@ -186,9 +213,17 @@ def compute_atomfeats(mol, label, reference_labels=('d_hydrogen', 'a_hydrogen', 
     reference_idx = ref_H_idx  # path computations reference the labeled H
 
     # role flags
-    atom_roles = {i: {"is_donor": 0, "is_acceptor": 0, "is_donor_H": 0, "is_acceptor_H": 0,
-                      "is_acceptor_neighbor": 0, "is_donor_neighbor": 0}
-                  for i in range(num_atoms)}
+    atom_roles = {
+        i: {
+            "is_donor": 0,
+            "is_acceptor": 0,
+            "is_donor_H": 0,
+            "is_acceptor_H": 0,
+            "is_acceptor_neighbor": 0,
+            "is_donor_neighbor": 0,
+        }
+        for i in range(num_atoms)
+    }
 
     for k, v in label.items():
         idx = int(k)
@@ -247,43 +282,54 @@ def compute_atomfeats(mol, label, reference_labels=('d_hydrogen', 'a_hydrogen', 
         if path_only:
             # strict path-only
             if plen >= 2:
-                radius = get_distance(coords, reference_idx, target_idx); r_flag = 1
+                radius = get_distance(coords, reference_idx, target_idx)
+                r_flag = 1
                 rad_used_path = [reference_idx, target_idx]
             if plen >= 3:
-                angle = get_angle(coords, reference_idx, path[1], target_idx); a_flag = 1
+                angle = get_angle(coords, reference_idx, path[1], target_idx)
+                a_flag = 1
                 ang_used_path = [reference_idx, path[1], target_idx]
             if plen >= 4:
-                dihedral = get_dihedral(coords, reference_idx, path[1], path[2], target_idx); d_flag = 1
+                dihedral = get_dihedral(coords, reference_idx, path[1], path[2], target_idx)
+                d_flag = 1
                 dih_used_path = [reference_idx, path[1], path[2], target_idx]
 
         elif hybrid:
             # path first, then ref-side fallbacks
-            radius = get_distance(coords, reference_idx, target_idx); r_flag = 1
+            radius = get_distance(coords, reference_idx, target_idx)
+            r_flag = 1
             rad_used_path = [reference_idx, target_idx]
             if plen >= 3:
-                angle = get_angle(coords, reference_idx, path[1], target_idx); a_flag = 1
+                angle = get_angle(coords, reference_idx, path[1], target_idx)
+                a_flag = 1
                 ang_used_path = [reference_idx, path[1], target_idx]
             if plen >= 4:
-                dihedral = get_dihedral(coords, reference_idx, path[1], path[2], target_idx); d_flag = 1
+                dihedral = get_dihedral(coords, reference_idx, path[1], path[2], target_idx)
+                d_flag = 1
                 dih_used_path = [reference_idx, path[1], path[2], target_idx]
 
             if a_flag == 0:
                 pivot1 = _choose_pivot1(mol, reference_idx)
                 if pivot1 is not None:
-                    angle = _angle_fallback(coords, target_idx, reference_idx, pivot1); a_flag = 2
+                    angle = _angle_fallback(coords, target_idx, reference_idx, pivot1)
+                    a_flag = 2
                     ang_used_path = [reference_idx, pivot1, target_idx]
             if d_flag == 0:
                 pivot1 = _choose_pivot1(mol, reference_idx)
                 if pivot1 is not None:
                     pivot2 = _choose_pivot2(mol, reference_idx, pivot1)
                     if pivot2 is not None:
-                        dihedral = _dihedral_fallback(coords, target_idx, reference_idx, pivot1, pivot2); d_flag = 2
+                        dihedral = _dihedral_fallback(
+                            coords, target_idx, reference_idx, pivot1, pivot2
+                        )
+                        d_flag = 2
                         dih_used_path = [reference_idx, pivot1, target_idx, pivot2]
 
         else:
             # DEFAULT: role-geometry with your strict rules
             # 1) radius: always ref_H ↔ focus (no connectivity required)
-            radius = get_distance(coords, ref_H_idx, target_idx); r_flag = 3
+            radius = get_distance(coords, ref_H_idx, target_idx)
+            r_flag = 3
             rad_used_path = [ref_H_idx, target_idx]
 
             # 2) pick pivot1 strictly as donor/acceptor (no heavy-neighbor fallback here)
@@ -317,33 +363,39 @@ def compute_atomfeats(mol, label, reference_labels=('d_hydrogen', 'a_hydrogen', 
             # record graph path for info only
             record["shortest_path"] = safe_shortest_path(mol, ref_H_idx, target_idx)
 
-
         if record["shortest_path"] is None:
             record["shortest_path"] = safe_shortest_path(mol, reference_idx, target_idx)
 
-        record['radius_path'] = rad_used_path
-        record['angle_path'] = ang_used_path
-        record['dihedral_path'] = dih_used_path
+        record["radius_path"] = rad_used_path
+        record["angle_path"] = ang_used_path
+        record["dihedral_path"] = dih_used_path
 
         record["features"] = [radius, angle, dihedral, r_flag, a_flag, d_flag]
         feat_records.append(record)
 
     return feat_records
 
+
 def all_z_zero(mol):
     conf = mol.GetConformer()
     z = [conf.GetAtomPosition(i).z for i in range(mol.GetNumAtoms())]
     return all(abs(val) < 1e-8 for val in z)
 
+
 def get_sdf_file_list(directory):
     """Returns a list of SDF files in the given directory."""
     import os
-    return [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.sdf')]
+
+    return [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".sdf")]
+
 
 def _to_units(x, units):
-    if x is None or not np.isfinite(x): return np.nan
-    if units == "degree": return float(np.degrees(x))
+    if x is None or not np.isfinite(x):
+        return np.nan
+    if units == "degree":
+        return float(np.degrees(x))
     return float(x)  # radians
+
 
 def create_atom_feat_RAD_table(
     sdf_file_list,
@@ -366,20 +418,17 @@ def create_atom_feat_RAD_table(
         for idx, mol in enumerate(suppl):
             if mol is None:
                 continue
-            rxn_id = mol.GetProp('reaction') if mol.HasProp('reaction') else 'unknown'
-            mol_type = mol.GetProp('type') if mol.HasProp('type') else 'unknown'
-            if mol_type not in ['r1h', 'r2h']:
+            rxn_id = mol.GetProp("reaction") if mol.HasProp("reaction") else "unknown"
+            mol_type = mol.GetProp("type") if mol.HasProp("type") else "unknown"
+            if mol_type not in ["r1h", "r2h"]:
                 continue
 
             if all_z_zero(mol):
                 print(f"Flat Z in: {sdf_file}, molecule #{idx}, rxn_id={rxn_id}, type={mol_type}")
 
-            label = ast.literal_eval(mol.GetProp('mol_properties'))
+            label = ast.literal_eval(mol.GetProp("mol_properties"))
             feat_records = compute_atomfeats(
-                mol, label,
-                reference_labels=reference_labels,
-                path_only=path_only,
-                hybrid=hybrid,
+                mol, label, reference_labels=reference_labels, path_only=path_only, hybrid=hybrid
             )
 
             atom_symbols = [atom.GetSymbol() for atom in mol.GetAtoms()]  # avoid recomputing
@@ -418,50 +467,50 @@ def create_atom_feat_RAD_table(
     df_all_feats = pd.DataFrame(all_feat_rows)
     df_all_feats.to_csv(output_csv, index=False)
 
+
 def _with_suffix(base_path: str, tag: str) -> str:
     p = Path(base_path)
     return str(p.with_name(f"{p.stem}_{tag}{p.suffix}"))
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Extract atom features (radius, angle, dihedral) from SDF files."
     )
-    parser.add_argument(
-        "sdf_directory",
-        type=str,
-        help="Directory containing .sdf files."
-    )
+    parser.add_argument("sdf_directory", type=str, help="Directory containing .sdf files.")
     parser.add_argument(
         "--output",
         type=str,
         default="all_sdf_features.csv",
-        help=("Base output. If it looks like a directory (trailing '/', existing dir, or no extension), "
+        help=(
+            "Base output. If it looks like a directory (trailing '/', existing dir, or no extension), "
             "files will be written there as <dir>_{mode}.csv. "
-            "If it's a file (e.g., foo.csv), outputs become foo_{mode}.csv.")
-)
+            "If it's a file (e.g., foo.csv), outputs become foo_{mode}.csv."
+        ),
+    )
     # Modes: allow multiple selections or a convenience --both
     parser.add_argument(
         "--mode",
         choices=["default", "path-only", "hybrid"],
         action="append",
-        help="Which computation mode(s) to run. Can be specified multiple times."
+        help="Which computation mode(s) to run. Can be specified multiple times.",
     )
     parser.add_argument(
         "--both",
         action="store_true",
-        help="Shortcut for running both 'default' and 'path-only' and writing two files."
+        help="Shortcut for running both 'default' and 'path-only' and writing two files.",
     )
     parser.add_argument(
         "--angle-units",
         choices=["radian", "degree"],
         default="radian",
-        help="Units for angles (default: radian)."
+        help="Units for angles (default: radian).",
     )
     parser.add_argument(
         "--dihedral-units",
         choices=["radian", "degree"],
         default="radian",
-        help="Units for dihedrals (default: radian)."
+        help="Units for dihedrals (default: radian).",
     )
     args = parser.parse_args()
 
@@ -481,7 +530,7 @@ if __name__ == "__main__":
             out = _resolve_output(args.output, "default")
             create_atom_feat_RAD_table(
                 sdf_files,
-                reference_labels=('d_hydrogen', 'a_hydrogen', 'acceptor'),
+                reference_labels=("d_hydrogen", "a_hydrogen", "acceptor"),
                 path_only=False,
                 hybrid=False,
                 angle_units=args.angle_units,
@@ -495,7 +544,7 @@ if __name__ == "__main__":
             out = _resolve_output(args.output, "path")
             create_atom_feat_RAD_table(
                 sdf_files,
-                reference_labels=('d_hydrogen', 'a_hydrogen', 'acceptor'),
+                reference_labels=("d_hydrogen", "a_hydrogen", "acceptor"),
                 path_only=True,
                 hybrid=False,
                 angle_units=args.angle_units,
@@ -509,7 +558,7 @@ if __name__ == "__main__":
             out = _resolve_output(args.output, "hybrid")
             create_atom_feat_RAD_table(
                 sdf_files,
-                reference_labels=('d_hydrogen', 'a_hydrogen', 'acceptor'),
+                reference_labels=("d_hydrogen", "a_hydrogen", "acceptor"),
                 path_only=False,
                 hybrid=True,
                 angle_units=args.angle_units,

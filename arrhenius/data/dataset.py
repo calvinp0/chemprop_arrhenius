@@ -60,7 +60,7 @@ class ArrMoleculeDataset:
     @property
     def d_vf(self) -> int:
         return 0 if self.base.V_fs[0] is None else self.base.V_fs[0].shape[1]
-    
+
     @property
     def d_x(self) -> int:
         X = self.base.X_d
@@ -257,10 +257,11 @@ class ArrMulticomponentDataset:
         return self.components[0].normalize_targets(scaler, columns)
 
     def fit_shared_input_scaler(
-        self, key: str = "V_f", columns_to_scale: Optional[List[int]] = None,
+        self,
+        key: str = "V_f",
+        columns_to_scale: Optional[List[int]] = None,
         scaler: Optional[StandardScaler] = None,
     ) -> StandardScaler:
-
         mats = []
         if key == "V_f":
             for comp in self.components:
@@ -282,7 +283,7 @@ class ArrMulticomponentDataset:
         scaler = (scaler or StandardScaler()).fit(X_cat)
         self._shared_input_scalers[key] = scaler
         self._columns_to_scale[key] = columns_to_scale
-        return scaler    
+        return scaler
 
     def apply_shared_input_scaler(self, key: str = "V_f", scaler: Optional[StandardScaler] = None):
         # NEW: defensive init if __post_init__ wasn’t run for some reason
@@ -311,6 +312,7 @@ class ArrMulticomponentDataset:
             scaler = self.fit_shared_input_scaler(key=key, columns_to_scale=columns_to_scale)
         else:
             from sklearn.utils.validation import check_is_fitted
+
             try:
                 check_is_fitted(scaler)
             except Exception:

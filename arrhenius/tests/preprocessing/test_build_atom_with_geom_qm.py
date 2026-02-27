@@ -40,14 +40,7 @@ def test_build_atom_with_geom_qm_e2e_on_fixture(tmp_path: Path) -> None:
 
     manifest = tmp_path / "manifest.csv"
     pd.DataFrame(
-        [
-            {
-                "rxn_id": rxn_id,
-                "sdf_file": str(sdf),
-                "r1h_log": str(r1h_log),
-                "r2h_log": str(r2h_log),
-            }
-        ]
+        [{"rxn_id": rxn_id, "sdf_file": str(sdf), "r1h_log": str(r1h_log), "r2h_log": str(r2h_log)}]
     ).to_csv(manifest, index=False)
 
     out_dir = tmp_path / "out"
