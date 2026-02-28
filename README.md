@@ -17,6 +17,18 @@
 
 Chemprop is a repository containing message passing neural networks for molecular property prediction.
 
+## Arrhenius Extension In This Repo
+
+This repository includes an Arrhenius-focused extension under `arrhenius/` built on top of Chemprop.
+That codebase is the model/workflow used for the article:
+
+**Learning Rates: Predicting Reaction Rate Coefficients for Hydrogen Abstraction Reactions**
+
+If you are here for that workflow, start with:
+- `arrhenius/README.md`
+- `arrhenius/preprocessing/README.md`
+- `arrhenius/training/hpo/WORKFLOW.md`
+
 Documentation can be found [here](https://chemprop.readthedocs.io/en/main/).
 
 There are tutorial notebooks in the [`examples/`](https://github.com/chemprop/chemprop/tree/main/examples) directory.
